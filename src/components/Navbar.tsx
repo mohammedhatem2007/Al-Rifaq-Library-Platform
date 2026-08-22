@@ -39,7 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick('hero')}
             className="cursor-pointer flex items-center gap-3 select-none transition-transform active:scale-95"
           >
-            <Logo size={52} showSubtext={false} />
+            <Logo size={52} showSubtext={false} plain imageClassName="h-16 w-auto object-contain" />
             <div className="flex flex-col text-right">
               <span className="font-heading font-extrabold text-lg sm:text-xl text-white tracking-wide">
                 مكتبة الرفاق
@@ -149,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="lg:hidden bg-[#0c1524] border-b border-slate-800 px-5 py-6 space-y-4 animate-fadeIn" dir="rtl">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-            <Logo size={46} />
+            <Logo size={46} plain imageClassName="h-16 w-auto object-contain" />
             <div>
               <span className="font-heading font-extrabold text-base text-white block">مكتبة الرفاق</span>
               <span className="text-xs text-slate-400">الزوايدة - آخر شارع الرواد</span>

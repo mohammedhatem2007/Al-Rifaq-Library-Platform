@@ -1,6 +1,5 @@
 import React from 'react';
 import { Printer, ShoppingCart, Truck, Package, ShieldCheck } from 'lucide-react';
-import { Logo } from './Logo';
 
 interface HeroSectionProps {
   onStartPrinting: () => void;
@@ -76,11 +75,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartPrinting, onBro
 
           {/* Left Column: Big Circular Logo Illustration */}
           <div className="lg:col-span-5 flex justify-center items-center">
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-white shadow-2xl flex items-center justify-center p-4 border-4 border-slate-700/50">
+            <div className="relative w-[320px] h-[320px] rounded-full flex items-center justify-center">
               <img
                 src="/WEB_SITE_LOGO_.png"
                 alt="شعار مكتبة الرفاق"
-                className="w-full h-full object-contain rounded-full"
+                className="w-[180%] h-[180%] max-w-none object-contain absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
               />
             </div>
           </div>

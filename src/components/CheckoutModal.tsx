@@ -30,6 +30,11 @@ interface CheckoutModalProps {
   onOrderSuccess: (order: Order) => void;
 }
 
+const roundTotal = (value: number) => {
+  const fractionalPart = value - Math.floor(value);
+  return fractionalPart < 0.5 ? Math.floor(value) : Math.ceil(value);
+};
+
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
@@ -68,12 +73,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Subtotals
   const printingSubtotal = printJobs.reduce((acc, j) => acc + j.totalPrice, 0);
   const stationerySubtotal = cartItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0);
-  const itemsSubtotal = parseFloat((printingSubtotal + stationerySubtotal).toFixed(2));
+  const itemsSubtotal = roundTotal(printingSubtotal + stationerySubtotal);
 
   // Delivery Fee Calculation
   const selectedAreaObj = activeAreas.find((a) => a.id === selectedAreaId) || activeAreas[0] || { id: 'default', name: 'المدينة', fee: 5 };
   const deliveryFee = deliveryMethod === 'delivery' ? selectedAreaObj.fee : 0;
-  const grandTotal = parseFloat((itemsSubtotal + deliveryFee).toFixed(2));
+  const grandTotal = roundTotal(itemsSubtotal + deliveryFee);
 
   // Copy helper
   const handleCopy = (text: string, fieldId: string) => {

@@ -1,4 +1,5 @@
 {
+  "adminPassword": "rifaq2026",
   "pricing": {
     "bwPriceA4": 0.15,
     "colorPriceA4": 0.5,
@@ -13,13 +14,55 @@
     "deliveryFeeUniversities": 3,
     "deliveryFeeOther": 8,
     "layoutDivisor1PerPage": 1,
-    "layoutDivisor2PerPage": 2,
-    "layoutDivisor4PerPage": 4,
-    "layoutDivisorCustomDefault": 6
+    "layoutDivisor2PerPage": 4,
+    "layoutDivisor4PerPage": 8,
+    "layoutDivisorCustomDefault": 1
   },
+  "deliveryAreas": [
+    {
+      "id": "iug",
+      "name": "الجامعة الإسلامية بغزة (IUG)",
+      "fee": 3
+    },
+    {
+      "id": "alazhar",
+      "name": "جامعة الأزهر - المقر الرئيسي وحرم المغراقة",
+      "fee": 3
+    },
+    {
+      "id": "alaqsa",
+      "name": "جامعة الأقصى (غزة / خانيونس)",
+      "fee": 4
+    },
+    {
+      "id": "gaza_center",
+      "name": "مدينة غزة (الرمال، النصر، الصبرة، الدرج، التفاح)",
+      "fee": 5
+    },
+    {
+      "id": "gaza_west",
+      "name": "غرب غزة (الميناء، أنصار، تل الهوا)",
+      "fee": 5
+    },
+    {
+      "id": "north_gaza",
+      "name": "شمال غزة (جباليا، بيت لاهيا، بيت حانون)",
+      "fee": 7
+    },
+    {
+      "id": "middle_area",
+      "name": "المنطقة الوسطى (دير البلح، النصيرات، الزوايدة، البريج)",
+      "fee": 5
+    },
+    {
+      "id": "khanyounis",
+      "name": "خانيونس ورفح",
+      "fee": 8
+    }
+  ],
   "availability": {
     "printingCalculator": true,
-    "educationalBundles": true,
+    "educationalBundles": false,
     "stationery": true,
     "deliveryService": true,
     "offlineMessage": "نعتذر، هذه الخدمة تخضع للصيانة المؤقتة لتحديث الأسعار والورق. يُرجى التواصل عبر الواتساب للطلبات العاجلة."

@@ -19,7 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenTracker, onOpe
           {/* Col 1: Brand & Logo */}
           <div className="space-y-4">
             <div className="cursor-pointer inline-block" onClick={() => onNavigate('hero')}>
-              <Logo size={70} showSubtext={true} />
+              <Logo size={70} showSubtext={true} plain hideLocationBadge imageClassName="h-24 w-auto object-contain" />
             </div>
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
               الوجهة الطلابية والجامعية الأولى لخدمات الطباعة الرقمية والتجليد، وتوفير مستلزمات القرطاسية والأوراق والرزم بأسعار مناسبة.
@@ -142,13 +142,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenTracker, onOpe
               <span className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-bold text-slate-200">
                 الدفع عند الاستلام
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-bold text-[#caa242]">
+              <span className="px-2.5 py-1 rounded-lg bg-[#004A98]/10 border border-[#004A98]/30 text-[11px] font-bold text-[#004A98]">
                 بنك فلسطين
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-bold text-sky-400">
+              <span className="px-2.5 py-1 rounded-lg bg-[#E31E24]/10 border border-[#E31E24]/30 text-[11px] font-bold text-[#E31E24]">
                 PalPay
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-bold text-emerald-400">
+              <span className="px-2.5 py-1 rounded-lg bg-[#80C242]/10 border border-[#80C242]/30 text-[11px] font-bold text-[#80C242]">
                 جوال باي (Jawwal Pay)
               </span>
             </div>

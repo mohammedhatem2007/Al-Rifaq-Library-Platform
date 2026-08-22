@@ -55,7 +55,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminRoute, setIsAdminRoute] = useState(() => window.location.pathname.replace(/\/$/, '') === '/admin');
   const [trackerInitialId, setTrackerInitialId] = useState<string>('');
   const [lastCreatedOrder, setLastCreatedOrder] = useState<Order | null>(null);
 
@@ -84,6 +84,15 @@ export default function App() {
       localStorage.setItem('rifaq_print_jobs', JSON.stringify(printJobs));
     } catch {}
   }, [printJobs]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsAdminRoute(window.location.pathname.replace(/\/$/, '') === '/admin');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Handlers for Cart
   const handleAddToCart = (product: Product) => {
@@ -153,6 +162,16 @@ export default function App() {
     }
   };
 
+  const openAdminRoute = () => {
+    window.history.pushState({}, '', '/admin');
+    setIsAdminRoute(true);
+  };
+
+  const closeAdminRoute = () => {
+    window.history.pushState({}, '', '/');
+    setIsAdminRoute(false);
+  };
+
   const handleConfigUpdated = (pricing: PricingConfig, availability: SectionAvailability, deliveryAreas?: DeliveryArea[]) => {
     setConfig((prev) => ({
       ...prev,
@@ -166,6 +185,20 @@ export default function App() {
     setProducts(updatedProducts);
   };
 
+  if (isAdminRoute) {
+    return (
+      <AdminDashboard
+        onClose={closeAdminRoute}
+        currentPricing={config.pricing}
+        currentAvailability={config.availability}
+        deliveryAreas={config.deliveryAreas}
+        products={products}
+        onConfigUpdated={handleConfigUpdated}
+        onProductsUpdated={handleProductsUpdated}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] text-[#0f172a]" dir="rtl">
       
@@ -175,7 +208,7 @@ export default function App() {
         printJobs={printJobs}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenTracker={() => setIsTrackerOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={openAdminRoute}
         onNavigate={handleNavigate}
       />
 
@@ -219,7 +252,7 @@ export default function App() {
       <Footer
         onNavigate={handleNavigate}
         onOpenTracker={() => setIsTrackerOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={openAdminRoute}
       />
 
       {/* Slide-over Cart Drawer */}
@@ -263,18 +296,6 @@ export default function App() {
           setTrackerInitialId('');
         }}
         initialOrderId={trackerInitialId}
-      />
-
-      {/* Admin Panel Modal */}
-      <AdminDashboard
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        currentPricing={config.pricing}
-        currentAvailability={config.availability}
-        deliveryAreas={config.deliveryAreas}
-        products={products}
-        onConfigUpdated={handleConfigUpdated}
-        onProductsUpdated={handleProductsUpdated}
       />
 
     </div>

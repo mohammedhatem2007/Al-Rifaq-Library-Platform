@@ -103,6 +103,8 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
 
     const newFiles: UploadedPrintFile[] = [];
     Array.from(filesList).forEach((file) => {
+      if (file.size > 500 * 1024 * 1024) return;
+
       const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       let estimatedPages = 1;
       
@@ -395,7 +397,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
                     اضغط لاختيار الملفات أو اسحبها هنا
                   </p>
                   <p className="text-xs text-slate-400">
-                    PDF, Word, PowerPoint, صور (الحد الأقصى 50MB)
+                    PDF, Word, PowerPoint, صور (الحد الأقصى 500MB)
                   </p>
                 </div>
               </div>

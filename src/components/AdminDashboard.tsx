@@ -48,7 +48,6 @@ import {
 import { downloadOrdersCSV } from '../utils/csvHelper';
 
 interface AdminDashboardProps {
-  isOpen: boolean;
   onClose: () => void;
   currentPricing: PricingConfig;
   currentAvailability: SectionAvailability;
@@ -59,7 +58,6 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  isOpen,
   onClose,
   currentPricing,
   currentAvailability,
@@ -435,8 +433,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   // Filter and Search Orders
   const filteredOrders = orders.filter((o) => {
     const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
@@ -451,12 +447,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return orderNum.includes(q) || custName.includes(q) || custPhone.includes(q);
   });
 
+  const handleDownloadPrintFiles = (order: Order) => {
+    const files = order.printJobs.flatMap((job) => job.files || []).filter((file) => file.dataBase64);
+
+    files.forEach((file, index) => {
+      const link = document.createElement('a');
+      link.href = file.dataBase64 as string;
+      link.download = file.name || `print-file-${index + 1}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4" dir="rtl">
+    <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900" dir="rtl">
       
       {!isAuthenticated ? (
         /* Login Screen */
-        <div className="bg-white text-slate-900 rounded-3xl w-full max-w-md p-8 shadow-2xl space-y-6 text-center animate-scaleUp">
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+          <div className="bg-white text-slate-900 rounded-3xl w-full max-w-md p-8 shadow-2xl space-y-6 text-center animate-scaleUp">
           <div className="w-20 h-20 rounded-full bg-[#fcf8ed] border-2 border-[#caa242] flex items-center justify-center mx-auto shadow-sm">
             <Logo size={54} />
           </div>
@@ -512,10 +522,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               العودة إلى الموقع
             </button>
           </div>
+          </div>
         </div>
       ) : (
         /* Authenticated Dashboard View */
-        <div className="w-full max-w-6xl bg-[#f8fafc] text-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh] border border-slate-200 animate-fadeIn">
+        <div className="w-full min-h-screen bg-[#f8fafc] text-slate-900 overflow-hidden flex flex-col border border-slate-200 animate-fadeIn">
           
           {/* Top Header */}
           <div className="bg-[#0c1524] text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -778,6 +789,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               >
                                 <Eye className="w-3.5 h-3.5 text-[#caa242]" />
                                 <span>إشعار الدفع</span>
+                              </button>
+                            )}
+
+                            {order.printJobs.some((job) => job.files?.some((file) => file.dataBase64)) && (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadPrintFiles(order)}
+                                className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>تحميل ملفات الطباعة</span>
                               </button>
                             )}
 
