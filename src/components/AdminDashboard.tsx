@@ -366,12 +366,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         price: '',
         originalPrice: '',
         description: '',
-        image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80',
+        image: '',
         inStock: true,
         tag: '',
       });
     }
     setIsProductModalOpen(true);
+  };
+
+  const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProductActionMsg('يرجى اختيار ملف صورة صالح');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setProductForm((current) => ({ ...current, image: reader.result as string }));
+        setProductActionMsg(null);
+      }
+    };
+    reader.onerror = () => setProductActionMsg('تعذر قراءة ملف الصورة');
+    reader.readAsDataURL(file);
   };
 
   // Save Product (Create or Update with Automatic Discount Calculation)
@@ -397,7 +418,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       originalPrice: origPriceNum,
       discountPercentage: calculatedDiscount,
       description: productForm.description.trim(),
-      image: productForm.image.trim() || 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80',
+      image: productForm.image,
       inStock: productForm.inStock,
       tag: autoTag,
     };
@@ -1594,15 +1615,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-bold text-slate-800 block">رابط الصورة (URL):</label>
+                <label className="font-bold text-slate-800 block">صورة المنتج:</label>
                 <input
-                  type="text"
-                  value={productForm.image}
-                  onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none font-mono text-[11px]"
+                  type="file"
+                  accept="image/*"
+                  required={!productForm.image}
+                  onChange={handleProductImageUpload}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none text-xs file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-[#caa242] file:text-slate-950 file:font-bold"
                   dir="ltr"
                 />
+                {productForm.image && (
+                  <div className="flex items-center gap-3 pt-2">
+                    <img src={productForm.image} alt="معاينة صورة المنتج" className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
+                    <span className="text-[11px] text-slate-500">تم تحويل الصورة وتخزينها داخل بيانات المنتج</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
