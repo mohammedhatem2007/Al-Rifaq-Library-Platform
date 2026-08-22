@@ -18,9 +18,10 @@ import {
   Sliders,
   Package,
   Truck,
+  CreditCard,
 } from 'lucide-react';
 import { Logo } from './Logo';
-import { Order, PricingConfig, SectionAvailability, OrderStatus, Product, ProductCategory, DeliveryArea } from '../types';
+import { Order, PricingConfig, SectionAvailability, OrderStatus, Product, ProductCategory, DeliveryArea, PaymentAccounts } from '../types';
 import { 
   fetchAdminOrders, 
   updateOrderStatus, 
@@ -33,6 +34,7 @@ import {
   openWhatsAppChat
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
+import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
 
 const ADMIN_PASSWORD = 'rifaq2026';
 
@@ -61,7 +63,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [authToken, setAuthToken] = useState<string>('admin_token_2026');
 
   // Navigation tab inside admin
-  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'pricing' | 'delivery' | 'password'>('orders');
+  const [adminTab, setAdminTab] = useState<'orders' | 'products' | 'pricing' | 'delivery' | 'payments' | 'password'>('orders');
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccounts>(() => getPaymentAccounts());
+  const [paymentSaveMessage, setPaymentSaveMessage] = useState<string | null>(null);
 
   // Orders Management
   const [orders, setOrders] = useState<Order[]>([]);
@@ -449,6 +453,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
+  const handleSavePaymentAccounts = (e: React.FormEvent) => {
+    e.preventDefault();
+    savePaymentAccounts(paymentAccounts);
+    setPaymentSaveMessage('تم حفظ بيانات الدفع وتحديثها في صفحة الدفع');
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900" dir="rtl">
       
@@ -616,6 +626,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Truck className="w-4 h-4" />
               <span>أماكن ورسوم التوصيل ({areaList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('payments')}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                adminTab === 'payments'
+                  ? 'bg-[#0c1524] text-[#caa242] shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>طرق الدفع</span>
             </button>
 
             <button
@@ -1300,6 +1322,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 )}
 
+              </div>
+            )}
+
+            {adminTab === 'payments' && (
+              <div className="max-w-2xl mx-auto bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs space-y-5">
+                <div className="space-y-1 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#fcf8ed] border border-[#caa242] flex items-center justify-center mx-auto text-[#caa242]">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-heading font-extrabold text-lg text-slate-900">إعدادات طرق الدفع</h4>
+                  <p className="text-xs text-slate-500">حدّث أرقام التحويل والمحافظ التي تظهر للعملاء في صفحة الدفع</p>
+                </div>
+
+                {paymentSaveMessage && (
+                  <div className="p-3.5 rounded-xl text-xs font-bold text-center border bg-emerald-50 border-emerald-300 text-emerald-800">
+                    {paymentSaveMessage}
+                  </div>
+                )}
+
+                <form onSubmit={handleSavePaymentAccounts} className="space-y-5">
+                  <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h5 className="font-bold text-sm text-slate-900">تحويل بنكي - بنك فلسطين</h5>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-bold text-slate-700">رقم الحساب</span>
+                        <input
+                          type="text"
+                          required
+                          value={paymentAccounts.bankOfPalestine.accountNumber}
+                          onChange={(e) => setPaymentAccounts({ ...paymentAccounts, bankOfPalestine: { ...paymentAccounts.bankOfPalestine, accountNumber: e.target.value } })}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono outline-none focus:ring-2 focus:ring-[#caa242]"
+                          dir="ltr"
+                        />
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-bold text-slate-700">رقم IBAN</span>
+                        <input
+                          type="text"
+                          required
+                          value={paymentAccounts.bankOfPalestine.iban}
+                          onChange={(e) => setPaymentAccounts({ ...paymentAccounts, bankOfPalestine: { ...paymentAccounts.bankOfPalestine, iban: e.target.value } })}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono outline-none focus:ring-2 focus:ring-[#caa242]"
+                          dir="ltr"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h5 className="font-bold text-sm text-slate-900">المحافظ الإلكترونية</h5>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-bold text-slate-700">رقم محفظة PalPay</span>
+                        <input
+                          type="text"
+                          required
+                          value={paymentAccounts.palPay.walletNumber}
+                          onChange={(e) => setPaymentAccounts({ ...paymentAccounts, palPay: { ...paymentAccounts.palPay, walletNumber: e.target.value } })}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono outline-none focus:ring-2 focus:ring-[#caa242]"
+                          dir="ltr"
+                        />
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-bold text-slate-700">رقم حساب / محفظة Jawwal Pay</span>
+                        <input
+                          type="text"
+                          required
+                          value={paymentAccounts.jawwalPay.walletNumber}
+                          onChange={(e) => setPaymentAccounts({ ...paymentAccounts, jawwalPay: { ...paymentAccounts.jawwalPay, walletNumber: e.target.value } })}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono outline-none focus:ring-2 focus:ring-[#caa242]"
+                          dir="ltr"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full py-3 rounded-xl bg-[#caa242] hover:bg-[#b88f34] text-slate-950 font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer">
+                    حفظ وتحديث بيانات الدفع
+                  </button>
+                </form>
               </div>
             )}
 

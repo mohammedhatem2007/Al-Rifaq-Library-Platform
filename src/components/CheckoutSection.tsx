@@ -7,8 +7,9 @@ import {
   Truck
 } from 'lucide-react';
 import { CartItem, PrintJob, DeliveryMethod, Order, DeliveryArea } from '../types';
-import { DELIVERY_AREAS as DEFAULT_DELIVERY_AREAS, PAYMENT_ACCOUNTS } from '../data/mockData';
+import { DELIVERY_AREAS as DEFAULT_DELIVERY_AREAS } from '../data/mockData';
 import { submitOrder, generateWhatsAppOrderMessage, openWhatsAppChat } from '../services/api';
+import { usePaymentAccounts } from '../utils/paymentAccounts';
 
 interface CheckoutSectionProps {
   cartItems: CartItem[];
@@ -29,6 +30,7 @@ export const CheckoutSection: React.FC<CheckoutSectionProps> = ({
   onOrderSuccess,
 }) => {
   const activeAreas = deliveryAreas && deliveryAreas.length > 0 ? deliveryAreas : DEFAULT_DELIVERY_AREAS;
+  const paymentAccounts = usePaymentAccounts();
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -418,16 +420,16 @@ export const CheckoutSection: React.FC<CheckoutSectionProps> = ({
                     <div className="space-y-1.5">
                       <div className="font-bold text-slate-800">بيانات الحساب - بنك فلسطين:</div>
                       <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-                        <span>رقم الحساب: <strong>{PAYMENT_ACCOUNTS.bankOfPalestine.accountNumber}</strong></span>
+                        <span>رقم الحساب: <strong>{paymentAccounts.bankOfPalestine.accountNumber}</strong></span>
                         <button
                           type="button"
-                          onClick={() => handleCopy(PAYMENT_ACCOUNTS.bankOfPalestine.accountNumber, 'bop')}
+                          onClick={() => handleCopy(paymentAccounts.bankOfPalestine.accountNumber, 'bop')}
                           className="text-[#caa242] font-bold text-[11px] cursor-pointer"
                         >
                           {copiedField === 'bop' ? 'تم النسخ' : 'نسخ'}
                         </button>
                       </div>
-                      <div className="text-[11px] text-slate-500">اسم المستفيد: {PAYMENT_ACCOUNTS.bankOfPalestine.beneficiary}</div>
+                      <div className="text-[11px] text-slate-500">اسم المستفيد: {paymentAccounts.bankOfPalestine.beneficiary}</div>
                     </div>
                   )}
 
@@ -435,10 +437,10 @@ export const CheckoutSection: React.FC<CheckoutSectionProps> = ({
                     <div className="space-y-1.5">
                       <div className="font-bold text-slate-800">بيانات محفظة PalPay:</div>
                       <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-                        <span>رقم المحفظة: <strong>{PAYMENT_ACCOUNTS.palPay.walletNumber}</strong></span>
+                        <span>رقم المحفظة: <strong>{paymentAccounts.palPay.walletNumber}</strong></span>
                         <button
                           type="button"
-                          onClick={() => handleCopy(PAYMENT_ACCOUNTS.palPay.walletNumber, 'palpay')}
+                          onClick={() => handleCopy(paymentAccounts.palPay.walletNumber, 'palpay')}
                           className="text-[#caa242] font-bold text-[11px] cursor-pointer"
                         >
                           {copiedField === 'palpay' ? 'تم النسخ' : 'نسخ'}
@@ -451,10 +453,10 @@ export const CheckoutSection: React.FC<CheckoutSectionProps> = ({
                     <div className="space-y-1.5">
                       <div className="font-bold text-slate-800">بيانات حساب Jawwal Pay:</div>
                       <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200">
-                        <span>رقم الحساب / المحفظة: <strong>{PAYMENT_ACCOUNTS.jawwalPay.walletNumber}</strong></span>
+                        <span>رقم الحساب / المحفظة: <strong>{paymentAccounts.jawwalPay.walletNumber}</strong></span>
                         <button
                           type="button"
-                          onClick={() => handleCopy(PAYMENT_ACCOUNTS.jawwalPay.walletNumber, 'jawwal')}
+                          onClick={() => handleCopy(paymentAccounts.jawwalPay.walletNumber, 'jawwal')}
                           className="text-[#caa242] font-bold text-[11px] cursor-pointer"
                         >
                           {copiedField === 'jawwal' ? 'تم النسخ' : 'نسخ'}

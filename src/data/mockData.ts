@@ -1,4 +1,4 @@
-import { Product, PricingConfig, SectionAvailability } from '../types';
+import { Product, PricingConfig, SectionAvailability, PaymentAccounts } from '../types';
 
 export const DEFAULT_PRICING: PricingConfig = {
   bwPriceA4: 0.15,
@@ -27,7 +27,7 @@ export const DEFAULT_AVAILABILITY: SectionAvailability = {
   offlineMessage: 'نعتذر، هذه الخدمة تخضع للصيانة المؤقتة لتحديث الأسعار والورق. يُرجى التواصل عبر الواتساب للطلبات العاجلة.',
 };
 
-export const PAYMENT_ACCOUNTS = {
+export const PAYMENT_ACCOUNTS: PaymentAccounts = {
   bankOfPalestine: {
     name: 'بنك فلسطين (Bank of Palestine)',
     accountNumber: '2105492',

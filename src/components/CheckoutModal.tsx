@@ -16,8 +16,9 @@ import {
   Send
 } from 'lucide-react';
 import { CartItem, PrintJob, PaymentMethod, DeliveryMethod, Order, DeliveryArea } from '../types';
-import { DELIVERY_AREAS as DEFAULT_DELIVERY_AREAS, PAYMENT_ACCOUNTS } from '../data/mockData';
+import { DELIVERY_AREAS as DEFAULT_DELIVERY_AREAS } from '../data/mockData';
 import { submitOrder, generateWhatsAppOrderMessage, openWhatsAppChat } from '../services/api';
+import { usePaymentAccounts } from '../utils/paymentAccounts';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onOrderSuccess,
 }) => {
   const activeAreas = deliveryAreas && deliveryAreas.length > 0 ? deliveryAreas : DEFAULT_DELIVERY_AREAS;
+  const paymentAccounts = usePaymentAccounts();
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -549,17 +551,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">اسم المستفيد:</span>
-                        <strong className="text-slate-900">{PAYMENT_ACCOUNTS.bankOfPalestine.beneficiary}</strong>
+                        <strong className="text-slate-900">{paymentAccounts.bankOfPalestine.beneficiary}</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">رقم الحساب:</span>
                         <div className="flex items-center gap-1.5">
                           <code className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">
-                            {PAYMENT_ACCOUNTS.bankOfPalestine.accountNumber}
+                            {paymentAccounts.bankOfPalestine.accountNumber}
                           </code>
                           <button
                             type="button"
-                            onClick={() => handleCopy(PAYMENT_ACCOUNTS.bankOfPalestine.accountNumber, 'bop-acc')}
+                            onClick={() => handleCopy(paymentAccounts.bankOfPalestine.accountNumber, 'bop-acc')}
                             className="p-1 text-slate-500 hover:text-slate-800"
                             title="نسخ"
                           >
@@ -571,11 +573,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         <span className="text-slate-600">رقم الآيبان (IBAN):</span>
                         <div className="flex items-center gap-1.5">
                           <code className="font-mono text-[11px] text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {PAYMENT_ACCOUNTS.bankOfPalestine.iban}
+                            {paymentAccounts.bankOfPalestine.iban}
                           </code>
                           <button
                             type="button"
-                            onClick={() => handleCopy(PAYMENT_ACCOUNTS.bankOfPalestine.iban, 'bop-iban')}
+                            onClick={() => handleCopy(paymentAccounts.bankOfPalestine.iban, 'bop-iban')}
                             className="p-1 text-slate-500 hover:text-slate-800"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -589,17 +591,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">المستفيد:</span>
-                        <strong className="text-slate-900">{PAYMENT_ACCOUNTS.palPay.beneficiary}</strong>
+                        <strong className="text-slate-900">{paymentAccounts.palPay.beneficiary}</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">رقم محفظة PalPay:</span>
                         <div className="flex items-center gap-1.5">
                           <code className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">
-                            {PAYMENT_ACCOUNTS.palPay.walletNumber}
+                            {paymentAccounts.palPay.walletNumber}
                           </code>
                           <button
                             type="button"
-                            onClick={() => handleCopy(PAYMENT_ACCOUNTS.palPay.walletNumber, 'palpay-wallet')}
+                            onClick={() => handleCopy(paymentAccounts.palPay.walletNumber, 'palpay-wallet')}
                             className="p-1 text-slate-500 hover:text-slate-800"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -613,17 +615,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">المستفيد:</span>
-                        <strong className="text-slate-900">{PAYMENT_ACCOUNTS.jawwalPay.beneficiary}</strong>
+                        <strong className="text-slate-900">{paymentAccounts.jawwalPay.beneficiary}</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-600">رقم المحفظة (جوال باي):</span>
                         <div className="flex items-center gap-1.5">
                           <code className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">
-                            {PAYMENT_ACCOUNTS.jawwalPay.walletNumber}
+                            {paymentAccounts.jawwalPay.walletNumber}
                           </code>
                           <button
                             type="button"
-                            onClick={() => handleCopy(PAYMENT_ACCOUNTS.jawwalPay.walletNumber, 'jawwal-wallet')}
+                            onClick={() => handleCopy(paymentAccounts.jawwalPay.walletNumber, 'jawwal-wallet')}
                             className="p-1 text-slate-500 hover:text-slate-800"
                           >
                             <Copy className="w-3.5 h-3.5" />

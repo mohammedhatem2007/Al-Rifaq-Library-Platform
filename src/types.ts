@@ -56,6 +56,26 @@ export type PaymentMethod = 'cod' | 'online_transfer';
 export type DeliveryMethod = 'pickup' | 'delivery';
 export type OrderStatus = 'new' | 'processing' | 'printing' | 'ready' | 'delivered' | 'cancelled';
 
+export interface PaymentAccounts {
+  bankOfPalestine: {
+    name: string;
+    accountNumber: string;
+    iban: string;
+    beneficiary: string;
+  };
+  palPay: {
+    name: string;
+    walletNumber: string;
+    qrCodeLabel: string;
+    beneficiary: string;
+  };
+  jawwalPay: {
+    name: string;
+    walletNumber: string;
+    beneficiary: string;
+  };
+}
+
 export interface OrderCustomer {
   fullName: string;
   phone: string;
