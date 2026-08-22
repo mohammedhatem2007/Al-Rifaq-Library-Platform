@@ -1,213 +1,138 @@
 import { AppConfig, Order, PricingConfig, SectionAvailability, Product } from '../types';
 import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, PRODUCTS_DATA } from '../data/mockData';
 
-const BASE_URL = '';
+const CONFIG_KEY = 'rifaq_app_config';
+const PRODUCTS_KEY = 'rifaq_products';
+const ORDERS_KEY = 'rifaq_orders';
+const PASSWORD_KEY = 'rifaq_admin_password';
 
-export async function fetchAppConfig(): Promise<AppConfig> {
+function readStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
   try {
-    const res = await fetch(`${BASE_URL}/api/config`);
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    console.warn('Using default app config fallback:', e);
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) as T : fallback;
+  } catch {
+    return fallback;
   }
+}
+
+function writeStorage<T>(key: string, value: T): void {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  }
+}
+
+function defaultConfig(): AppConfig {
   return {
     pricing: DEFAULT_PRICING,
     availability: DEFAULT_AVAILABILITY,
+    deliveryAreas: [],
     adminEmail: 'mnassar37@smail.ucas.edu.ps',
     whatsappNumber: '+972592480383',
   };
 }
 
+export async function fetchAppConfig(): Promise<AppConfig> {
+  return { ...defaultConfig(), ...readStorage<Partial<AppConfig>>(CONFIG_KEY, {}) };
+}
+
 export async function updateAppConfig(
   pricing: PricingConfig,
   availability: SectionAvailability,
-  adminPassword: string,
+  _adminPassword: string,
   deliveryAreas?: import('../types').DeliveryArea[]
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/config`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pricing, availability, adminPassword, deliveryAreas }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'فشل تحديث الإعدادات' };
-    }
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const config = await fetchAppConfig();
+  writeStorage(CONFIG_KEY, { ...config, pricing, availability, deliveryAreas: deliveryAreas || config.deliveryAreas });
+  return { success: true };
 }
 
 export async function updateAdminPassword(
   currentPassword: string,
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/admin/password`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'تعذر تغيير كلمة المرور' };
-    }
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const current = readStorage(PASSWORD_KEY, 'rifaq2026');
+  if (currentPassword !== current) return { success: false, error: 'كلمة المرور الحالية غير صحيحة' };
+  writeStorage(PASSWORD_KEY, newPassword);
+  return { success: true };
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/products`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-  } catch (e) {
-    console.warn('Using fallback products data:', e);
-  }
-  return PRODUCTS_DATA;
+  return readStorage<Product[]>(PRODUCTS_KEY, PRODUCTS_DATA);
 }
 
 export async function createProduct(
   productData: Partial<Product>,
-  adminPassword: string
+  _adminPassword: string
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...productData, adminPassword }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'فشل إضافة المنتج' };
-    }
-    return { success: true, product: data.product };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const product = { id: `product-${Date.now()}`, categoryLabel: '', ...productData } as Product;
+  writeStorage(PRODUCTS_KEY, [product, ...await fetchProducts()]);
+  return { success: true, product };
 }
 
 export async function updateProduct(
   productId: string,
   productData: Partial<Product>,
-  adminPassword: string
+  _adminPassword: string
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/products/${productId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...productData, adminPassword }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'فشل تعديل المنتج' };
-    }
-    return { success: true, product: data.product };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const products = await fetchProducts();
+  const existing = products.find((product) => product.id === productId);
+  if (!existing) return { success: false, error: 'المنتج غير موجود' };
+  const product = { ...existing, ...productData };
+  writeStorage(PRODUCTS_KEY, products.map((item) => item.id === productId ? product : item));
+  return { success: true, product };
 }
 
 export async function deleteProduct(
   productId: string,
-  adminPassword: string
+  _adminPassword: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/products/${productId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminPassword }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'فشل حذف المنتج' };
-    }
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  writeStorage(PRODUCTS_KEY, (await fetchProducts()).filter((product) => product.id !== productId));
+  return { success: true };
 }
 
 export async function submitOrder(orderData: Partial<Order>): Promise<{ success: boolean; order?: Order; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'تعذر إرسال الطلب' };
-    }
-    return { success: true, order: data.order };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const orders = readStorage<Order[]>(ORDERS_KEY, []);
+  const id = `RIFAQ-${Math.floor(1000 + Math.random() * 9000)}`;
+  const order = {
+    ...orderData,
+    id,
+    orderNumber: `#${id}`,
+    createdAt: new Date().toISOString(),
+    status: 'new',
+  } as Order;
+  writeStorage(ORDERS_KEY, [order, ...orders]);
+  return { success: true, order };
 }
 
 export async function lookupOrder(identifier: string): Promise<{ success: boolean; order?: Order; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/orders/${encodeURIComponent(identifier)}`);
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'لم يتم العثور على الطلب' };
-    }
-    return { success: true, order: data.order };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const normalized = identifier.replace(/^#/, '').toLowerCase();
+  const order = readStorage<Order[]>(ORDERS_KEY, []).find((item) =>
+    item.id.toLowerCase() === normalized || item.orderNumber.toLowerCase() === identifier.toLowerCase()
+  );
+  return order ? { success: true, order } : { success: false, error: 'لم يتم العثور على الطلب' };
 }
 
-export async function fetchAdminOrders(token: string): Promise<Order[]> {
-  const res = await fetch(`${BASE_URL}/api/orders`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error('غير مصرح لك بالوصول');
-  }
-  return await res.json();
+export async function fetchAdminOrders(_token: string): Promise<Order[]> {
+  return readStorage<Order[]>(ORDERS_KEY, []);
 }
 
 export async function updateOrderStatus(orderId: string, status: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  return res.ok;
+  const orders = readStorage<Order[]>(ORDERS_KEY, []);
+  const updated = orders.map((order) => order.id === orderId ? { ...order, status: status as Order['status'] } : order);
+  writeStorage(ORDERS_KEY, updated);
+  return updated.some((order) => order.id === orderId);
 }
 
 export async function adminLogin(password: string): Promise<{ success: boolean; token?: string; error?: string }> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/admin/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error || 'كلمة المرور غير صحيحة' };
-    }
-    return { success: true, token: data.token };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  const current = readStorage(PASSWORD_KEY, 'rifaq2026');
+  return password === current
+    ? { success: true, token: 'admin_token_2026' }
+    : { success: false, error: 'كلمة المرور غير صحيحة' };
 }
 
 export async function fetchEmailLogs(): Promise<any[]> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/logs/emails`);
-    if (res.ok) return await res.json();
-  } catch {}
-  return [];
+  return readStorage<any[]>('rifaq_email_logs', []);
 }
 
 /**
