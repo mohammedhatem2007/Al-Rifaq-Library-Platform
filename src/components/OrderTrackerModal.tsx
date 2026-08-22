@@ -4,19 +4,13 @@ import {
   Search, 
   Clock, 
   CheckCircle2, 
-  Package, 
   Printer, 
   Truck, 
   AlertCircle, 
-  Phone, 
   MessageCircle, 
   Sparkles, 
-  Settings, 
   PackageCheck, 
   CheckCheck, 
-  Store, 
-  FileText, 
-  Calendar, 
   User, 
   CreditCard,
   Ban
@@ -313,7 +307,6 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                         {stages.map((stage, idx) => {
                           const isPast = idx < currentStageIndex;
                           const isCurrent = idx === currentStageIndex;
-                          const isUpcoming = idx > currentStageIndex;
                           const StageIcon = stage.icon;
 
                           return (
@@ -355,7 +348,6 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                       {stages.map((stage, idx) => {
                         const isPast = idx < currentStageIndex;
                         const isCurrent = idx === currentStageIndex;
-                        const isUpcoming = idx > currentStageIndex;
                         const StageIcon = stage.icon;
 
                         return (

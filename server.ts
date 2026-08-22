@@ -296,12 +296,12 @@ function getSupabase() {
 // ----------------- API ROUTES ----------------- //
 
 // Health
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // Get Config (Safe - no password)
-app.get('/api/config', (req, res) => {
+app.get('/api/config', (_req, res) => {
   const config = getStoredConfig();
   const safeConfig = {
     pricing: config.pricing,
@@ -360,7 +360,7 @@ app.put('/api/admin/password', (req, res) => {
 });
 
 // Products: Get All
-app.get('/api/products', (req, res) => {
+app.get('/api/products', (_req, res) => {
   const products = getStoredProducts();
   res.json(products);
 });
@@ -612,7 +612,7 @@ app.put('/api/orders/:id/status', (req, res) => {
 });
 
 // Admin Email Logs
-app.get('/api/logs/emails', (req, res) => {
+app.get('/api/logs/emails', (_req, res) => {
   const logs = getEmailLogs();
   res.json(logs);
 });
@@ -629,7 +629,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

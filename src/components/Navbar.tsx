@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { ShoppingCart, Search, ShieldCheck, Menu, X, Printer, BookOpen, Gift } from 'lucide-react';
+import { ShoppingCart, Search, ShieldCheck, Menu, X, Printer } from 'lucide-react';
 import { CartItem, PrintJob } from '../types';
 
 interface NavbarProps {

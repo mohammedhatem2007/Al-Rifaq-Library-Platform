@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, MessageCircle, Copy, Check, Printer, ArrowRight, FileText, QrCode } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Copy, Check, Printer } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Order } from '../types';
 import { openWhatsAppChat } from '../services/api';

@@ -3,14 +3,9 @@ import {
   Lock, 
   X, 
   RefreshCw, 
-  FileText, 
-  CheckCircle2, 
   Eye, 
-  Power, 
   Save, 
-  Phone, 
   MessageCircle, 
-  ArrowRight,
   LogOut,
   Download,
   AlertCircle,
@@ -21,15 +16,8 @@ import {
   KeyRound,
   Search,
   Sliders,
-  DollarSign,
   Package,
-  Printer,
-  Gift,
-  BookOpen,
-  Check,
-  Ban,
   Truck,
-  MapPin
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Order, PricingConfig, SectionAvailability, OrderStatus, Product, ProductCategory, DeliveryArea } from '../types';

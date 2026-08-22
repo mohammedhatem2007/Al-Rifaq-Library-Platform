@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  CheckCircle2, 
   AlertCircle, 
   Upload, 
-  Copy, 
   Send, 
   Store, 
   Truck

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  MapPin, 
   Phone, 
   User, 
   CreditCard, 
@@ -10,7 +9,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Copy, 
-  QrCode, 
   Truck, 
   Store,
   Info,
@@ -43,8 +41,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   deliveryAreas,
   onOrderSuccess,
 }) => {
-  if (!isOpen) return null;
-
   const activeAreas = deliveryAreas && deliveryAreas.length > 0 ? deliveryAreas : DEFAULT_DELIVERY_AREAS;
 
   // Form State
@@ -69,6 +65,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   // Subtotals
   const printingSubtotal = printJobs.reduce((acc, j) => acc + j.totalPrice, 0);

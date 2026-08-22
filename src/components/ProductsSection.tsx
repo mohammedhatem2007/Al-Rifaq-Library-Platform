@@ -4,12 +4,9 @@ import {
   ShoppingCart, 
   Check, 
   Package, 
-  Printer, 
+  Printer,
   Gift, 
   BookOpen, 
-  FileText, 
-  Calculator, 
-  PenTool, 
   Sparkles,
   Tag,
   CheckCircle2
