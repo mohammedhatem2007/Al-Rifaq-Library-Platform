@@ -28,9 +28,6 @@ import {
   updateAppConfig, 
   updateAdminPassword,
   fetchProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
   openWhatsAppChat
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
@@ -396,7 +393,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Save Product (Create or Update with Automatic Discount Calculation)
-  const handleSaveProduct = async (e: React.FormEvent) => {
+  const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = parseFloat(productForm.price) || 0;
     const origPriceNum = productForm.originalPrice ? parseFloat(productForm.originalPrice) : undefined;
@@ -411,7 +408,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     }
 
-    const payload: Partial<Product> = {
+    const productDetails: Omit<Product, 'id' | 'categoryLabel'> = {
       name: productForm.name.trim(),
       category: productForm.category,
       price: priceNum,
@@ -423,54 +420,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tag: autoTag,
     };
 
-    let saveSucceeded = false;
-
     if (editingProduct) {
-      const res = await updateProduct(editingProduct.id, payload, passwordInput);
-      if (res.success && res.product) {
-        const updated = productList.map((p) => (p.id === editingProduct.id ? res.product! : p));
-        setProductList(updated);
-        onProductsUpdated(updated);
-        saveProducts(updated);
-        setProductActionMsg('تم تعديل المنتج والخصم بنجاح!');
-        saveSucceeded = true;
-      } else {
-        setProductActionMsg(res.error || 'تعذر تعديل المنتج');
-      }
+      const updated = productList.map((product) =>
+        product.id === editingProduct.id
+          ? { ...product, ...productDetails }
+          : product
+      );
+      setProductList(updated);
+      onProductsUpdated(updated);
+      saveProducts(updated);
+      setProductActionMsg('تم تعديل المنتج والخصم بنجاح!');
     } else {
-      const res = await createProduct(payload, passwordInput);
-      if (res.success && res.product) {
-        const updated = [res.product, ...productList];
-        setProductList(updated);
-        onProductsUpdated(updated);
-        saveProducts(updated);
-        setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
-        saveSucceeded = true;
-      } else {
-        setProductActionMsg(res.error || 'تعذر إضافة المنتج');
-      }
+      const categoryLabels: Record<ProductCategory, string> = {
+        printing: 'قسم الطباعة',
+        stationery: 'قسم القرطاسية',
+        gifts: 'قسم الهدايا',
+        bundle: 'قسم الرزم التعليمية',
+        engineering: 'قسم الأدوات الهندسية',
+        medical: 'قسم الأدوات الطبية',
+        notebooks: 'قسم الدفاتر',
+      };
+      const newProduct: Product = {
+        id: `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        categoryLabel: categoryLabels[productForm.category],
+        ...productDetails,
+      };
+      const updated = [newProduct, ...productList];
+      setProductList(updated);
+      onProductsUpdated(updated);
+      saveProducts(updated);
+      setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
     }
 
-    if (saveSucceeded) {
-      setIsProductModalOpen(false);
-    }
+    setIsProductModalOpen(false);
     setTimeout(() => setProductActionMsg(null), 3000);
   };
 
   // Delete Product
-  const handleDeleteProduct = async (id: string) => {
+  const handleDeleteProduct = (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) return;
-    const res = await deleteProduct(id, passwordInput);
-    if (res.success) {
-      const updated = productList.filter((p) => p.id !== id);
-      setProductList(updated);
-      onProductsUpdated(updated);
-      saveProducts(updated);
-      setProductActionMsg('تم حذف المنتج بنجاح');
-      setTimeout(() => setProductActionMsg(null), 3000);
-    } else {
-      setProductActionMsg(res.error || 'تعذر حذف المنتج');
-    }
+    const updated = productList.filter((product) => product.id !== id);
+    setProductList(updated);
+    onProductsUpdated(updated);
+    saveProducts(updated);
+    setProductActionMsg('تم حذف المنتج بنجاح');
+    setTimeout(() => setProductActionMsg(null), 3000);
   };
 
   // Filter and Search Orders
