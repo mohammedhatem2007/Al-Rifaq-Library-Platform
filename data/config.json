@@ -1,0 +1,29 @@
+{
+  "pricing": {
+    "bwPriceA4": 0.15,
+    "colorPriceA4": 0.5,
+    "bwPriceA5": 0.1,
+    "colorPriceA5": 0.35,
+    "bwPriceA3": 0.8,
+    "colorPriceA3": 1.8,
+    "bindingSpiralPrice": 3,
+    "bindingThermalPrice": 4,
+    "bindingHardcoverPrice": 5,
+    "deliveryFeeGaza": 5,
+    "deliveryFeeUniversities": 3,
+    "deliveryFeeOther": 8,
+    "layoutDivisor1PerPage": 1,
+    "layoutDivisor2PerPage": 2,
+    "layoutDivisor4PerPage": 4,
+    "layoutDivisorCustomDefault": 6
+  },
+  "availability": {
+    "printingCalculator": true,
+    "educationalBundles": true,
+    "stationery": true,
+    "deliveryService": true,
+    "offlineMessage": "نعتذر، هذه الخدمة تخضع للصيانة المؤقتة لتحديث الأسعار والورق. يُرجى التواصل عبر الواتساب للطلبات العاجلة."
+  },
+  "adminEmail": "mnassar37@smail.ucas.edu.ps",
+  "whatsappNumber": "+972592480383"
+}

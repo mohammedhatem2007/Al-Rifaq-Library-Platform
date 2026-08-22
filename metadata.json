@@ -1,0 +1,6 @@
+{
+  "name": "مكتبة الرفاق للطباعة والخدمات الطلابية",
+  "description": "منصة مكتبة الرفاق للطباعة الذكية والخدمات الطلابية والقرطاسية مع حاسبة أسعار فورية والربط بالواتساب ولوحة تحكم للإدارة",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
