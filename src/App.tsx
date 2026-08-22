@@ -18,6 +18,7 @@ import { Footer } from './components/Footer';
 import { CartItem, PrintJob, Product, Order, AppConfig, PricingConfig, SectionAvailability, DeliveryArea } from './types';
 import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, DEFAULT_DELIVERY_AREAS, PRODUCTS_DATA } from './data/mockData';
 import { fetchAppConfig, fetchProducts } from './services/api';
+import { getStoredProducts, saveProducts } from './utils/productStorage';
 
 export default function App() {
   // Config state
@@ -30,7 +31,7 @@ export default function App() {
   });
 
   // Dynamic Products List
-  const [products, setProducts] = useState<Product[]>(PRODUCTS_DATA);
+  const [products, setProducts] = useState<Product[]>(() => getStoredProducts() || PRODUCTS_DATA);
 
   // Cart State (Persisted in localStorage for convenience)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -66,8 +67,9 @@ export default function App() {
     });
 
     fetchProducts().then((prods) => {
-      if (prods && prods.length > 0) {
+      if (prods && prods.length > 0 && !getStoredProducts()) {
         setProducts(prods);
+        saveProducts(prods);
       }
     });
   }, []);
@@ -183,6 +185,7 @@ export default function App() {
 
   const handleProductsUpdated = (updatedProducts: Product[]) => {
     setProducts(updatedProducts);
+    saveProducts(updatedProducts);
   };
 
   if (isAdminRoute) {

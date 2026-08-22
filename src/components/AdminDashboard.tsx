@@ -35,6 +35,7 @@ import {
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
+import { getStoredProducts, saveProducts } from '../utils/productStorage';
 
 const ADMIN_PASSWORD = 'rifaq2026';
 
@@ -187,9 +188,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const loadLatestProducts = async () => {
     try {
+      const storedProducts = getStoredProducts();
+      if (storedProducts) {
+        setProductList(storedProducts);
+        onProductsUpdated(storedProducts);
+        return;
+      }
+
       const prods = await fetchProducts();
       setProductList(prods);
       onProductsUpdated(prods);
+      saveProducts(prods);
     } catch (e) {
       console.error(e);
     }
@@ -393,13 +402,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       tag: autoTag,
     };
 
+    let saveSucceeded = false;
+
     if (editingProduct) {
       const res = await updateProduct(editingProduct.id, payload, passwordInput);
       if (res.success && res.product) {
         const updated = productList.map((p) => (p.id === editingProduct.id ? res.product! : p));
         setProductList(updated);
         onProductsUpdated(updated);
+        saveProducts(updated);
         setProductActionMsg('تم تعديل المنتج والخصم بنجاح!');
+        saveSucceeded = true;
+      } else {
+        setProductActionMsg(res.error || 'تعذر تعديل المنتج');
       }
     } else {
       const res = await createProduct(payload, passwordInput);
@@ -407,11 +422,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const updated = [res.product, ...productList];
         setProductList(updated);
         onProductsUpdated(updated);
+        saveProducts(updated);
         setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
+        saveSucceeded = true;
+      } else {
+        setProductActionMsg(res.error || 'تعذر إضافة المنتج');
       }
     }
 
-    setIsProductModalOpen(false);
+    if (saveSucceeded) {
+      setIsProductModalOpen(false);
+    }
     setTimeout(() => setProductActionMsg(null), 3000);
   };
 
@@ -423,6 +444,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const updated = productList.filter((p) => p.id !== id);
       setProductList(updated);
       onProductsUpdated(updated);
+      saveProducts(updated);
+      setProductActionMsg('تم حذف المنتج بنجاح');
+      setTimeout(() => setProductActionMsg(null), 3000);
+    } else {
+      setProductActionMsg(res.error || 'تعذر حذف المنتج');
     }
   };
 
