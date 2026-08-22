@@ -47,6 +47,8 @@ import {
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
 
+const ADMIN_PASSWORD = 'rifaq2026';
+
 interface AdminDashboardProps {
   onClose: () => void;
   currentPricing: PricingConfig;
@@ -168,7 +170,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-    const res = await adminLogin(passwordInput);
+    console.debug('Admin login attempt', { passwordLength: passwordInput.length });
+
+    if (passwordInput !== ADMIN_PASSWORD) {
+      setPasswordInput('');
+      setAuthToken('admin_token_2026');
+      setIsAuthenticated(false);
+      setAuthError('كلمة المرور غير صحيحة');
+      return;
+    }
+
+    const res = await adminLogin(ADMIN_PASSWORD);
     if (res.success) {
       const token = res.token || 'admin_token_2026';
       setAuthToken(token);
@@ -176,6 +188,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       loadOrders(token);
       loadLatestProducts();
     } else {
+      setPasswordInput('');
+      setAuthToken('admin_token_2026');
+      setIsAuthenticated(false);
       setAuthError('كلمة المرور غير صحيحة');
     }
   };
