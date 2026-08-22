@@ -9,6 +9,7 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const ADMIN_PASSWORD = 'rifaq2026';
 
 // Body parser limits for PDF/Image uploads
 app.use(express.json({ limit: '50mb' }));
@@ -33,7 +34,7 @@ const EMAIL_LOGS_FILE = path.join(dataDir, 'email_logs.json');
 
 // Default initial config
 const initialConfig = {
-  adminPassword: process.env.ADMIN_PASSWORD || 'rifaq2026',
+  adminPassword: ADMIN_PASSWORD,
   pricing: {
     bwPriceA4: 0.15,
     colorPriceA4: 0.50,
@@ -316,9 +317,8 @@ app.get('/api/config', (req, res) => {
 app.put('/api/config', (req, res) => {
   const { pricing, deliveryAreas, availability, adminPassword } = req.body;
   const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
   
-  if (adminPassword !== validPassword) {
+  if (adminPassword !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'كلمة مرور الإدارة غير صحيحة' });
   }
 
@@ -336,10 +336,8 @@ app.put('/api/config', (req, res) => {
 // Admin Login
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
-  const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
   
-  if (password === validPassword) {
+  if (password === ADMIN_PASSWORD) {
     res.json({ success: true, token: 'rifaq-auth-token-session-valid' });
   } else {
     res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
@@ -349,10 +347,8 @@ app.post('/api/admin/login', (req, res) => {
 // Admin Password Update
 app.put('/api/admin/password', (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
 
-  if (currentPassword !== validPassword) {
+  if (currentPassword !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة' });
   }
 
@@ -360,10 +356,7 @@ app.put('/api/admin/password', (req, res) => {
     return res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل' });
   }
 
-  currentConfig.adminPassword = newPassword.trim();
-  saveStoredConfig(currentConfig);
-
-  res.json({ success: true, message: 'تم تحديث كلمة مرور الإدارة بنجاح' });
+  res.status(400).json({ error: 'كلمة مرور الإدارة ثابتة في الكود ولا يمكن تغييرها' });
 });
 
 // Products: Get All
@@ -375,10 +368,8 @@ app.get('/api/products', (req, res) => {
 // Products: Create New Product (Admin)
 app.post('/api/products', (req, res) => {
   const { adminPassword, ...productData } = req.body;
-  const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
 
-  if (adminPassword !== validPassword) {
+  if (adminPassword !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'غير مصرح لك بإضافة منتجات' });
   }
 
@@ -423,10 +414,8 @@ app.post('/api/products', (req, res) => {
 app.put('/api/products/:id', (req, res) => {
   const { id } = req.params;
   const { adminPassword, ...updateData } = req.body;
-  const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
 
-  if (adminPassword !== validPassword) {
+  if (adminPassword !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'غير مصرح لك بتعديل المنتجات' });
   }
 
@@ -473,10 +462,8 @@ app.put('/api/products/:id', (req, res) => {
 app.delete('/api/products/:id', (req, res) => {
   const { id } = req.params;
   const { adminPassword } = req.body;
-  const currentConfig = getStoredConfig();
-  const validPassword = currentConfig.adminPassword || process.env.ADMIN_PASSWORD || 'rifaq2026';
 
-  if (adminPassword !== validPassword) {
+  if (adminPassword !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'غير مصرح لك بحذف المنتجات' });
   }
 
