@@ -22,7 +22,6 @@ import {
 import { Logo } from './Logo';
 import { Order, PricingConfig, SectionAvailability, OrderStatus, Product, ProductCategory, DeliveryArea } from '../types';
 import { 
-  adminLogin, 
   fetchAdminOrders, 
   updateOrderStatus, 
   updateAppConfig, 
@@ -155,26 +154,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setPricingJsonText(JSON.stringify(jsonFormatted, null, 2));
   }, [currentPricing, currentAvailability]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-    console.debug('Admin login attempt', { passwordLength: passwordInput.length });
 
-    if (passwordInput !== ADMIN_PASSWORD) {
-      setPasswordInput('');
+    if (passwordInput === ADMIN_PASSWORD) {
       setAuthToken('admin_token_2026');
-      setIsAuthenticated(false);
-      setAuthError('كلمة المرور غير صحيحة');
-      return;
-    }
-
-    const res = await adminLogin(ADMIN_PASSWORD);
-    if (res.success) {
-      const token = res.token || 'admin_token_2026';
-      setAuthToken(token);
       setIsAuthenticated(true);
-      loadOrders(token);
-      loadLatestProducts();
     } else {
       setPasswordInput('');
       setAuthToken('admin_token_2026');
@@ -500,7 +486,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="password"
                   required
                   value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setPasswordInput(value);
+                    setAuthError(null);
+                    if (value === ADMIN_PASSWORD) {
+                      setAuthToken('admin_token_2026');
+                      setIsAuthenticated(true);
+                    }
+                  }}
                   placeholder="أدخل كلمة المرور..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#caa242] text-slate-900 font-mono"
                   dir="ltr"
