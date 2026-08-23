@@ -1,12 +1,19 @@
 import { AppConfig, DeliveryArea, Order, PricingConfig, SectionAvailability, Product } from '../types';
 import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, PRODUCTS_DATA } from '../data/mockData';
-import { isSupabaseConfigured, readDeliveryZones, readProducts, readSetting, removeProduct, upsertProduct, writeDeliveryZones, writeSetting } from './supabaseRest';
+import { createClient } from '@supabase/supabase-js';
+import { isSupabaseConfigured, readSetting, writeSetting } from './supabaseRest';
 
 const CONFIG_KEY = 'rifaq_app_config';
 const PRODUCTS_KEY = 'rifaq_products';
 const ORDERS_KEY = 'rifaq_orders';
 const PASSWORD_KEY = 'rifaq_admin_password';
 const DELIVERY_ZONES_KEY = 'rifaq_delivery_zones';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+type ProductRow = { id: string; data: Product };
+type DeliveryZoneRow = DeliveryArea;
 
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -80,14 +87,25 @@ export async function updateAdminPassword(
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  if (isSupabaseConfigured()) {
+  if (supabase) {
     try {
-      const cloudProducts = await readProducts();
-      if (cloudProducts) {
-        writeStorage(PRODUCTS_KEY, cloudProducts);
-        return cloudProducts;
+      const { data: rows, error } = await supabase
+        .from('products')
+        .select('id,data')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+
+      if (rows && rows.length > 0) {
+        const products = (rows as ProductRow[]).map((row) => row.data || ({ id: row.id } as Product));
+        writeStorage(PRODUCTS_KEY, products);
+        return products;
       }
-      await Promise.all(PRODUCTS_DATA.map((product) => upsertProduct(product)));
+
+      const { error: seedError } = await supabase.from('products').upsert(
+        PRODUCTS_DATA.map((product) => ({ id: product.id, data: product })),
+        { onConflict: 'id' }
+      );
+      if (seedError) throw seedError;
       writeStorage(PRODUCTS_KEY, PRODUCTS_DATA);
       return PRODUCTS_DATA;
     } catch (error) {
@@ -98,15 +116,16 @@ export async function fetchProducts(): Promise<Product[]> {
 }
 
 export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
-  if (isSupabaseConfigured()) {
+  if (supabase) {
     try {
-      const cloudZones = await readDeliveryZones();
-      if (cloudZones) {
-        writeStorage(DELIVERY_ZONES_KEY, cloudZones);
-        return cloudZones;
-      }
-      writeStorage(DELIVERY_ZONES_KEY, []);
-      return [];
+      const { data: zones, error } = await supabase
+        .from('delivery_zones')
+        .select('id,name,fee')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      const cloudZones = (zones || []) as DeliveryZoneRow[];
+      writeStorage(DELIVERY_ZONES_KEY, cloudZones);
+      return cloudZones;
     } catch (error) {
       console.warn('Using local delivery zones fallback:', error);
     }
@@ -116,9 +135,29 @@ export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
 
 export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ success: boolean; error?: string }> {
   writeStorage(DELIVERY_ZONES_KEY, zones);
-  if (isSupabaseConfigured()) {
+  if (supabase) {
     try {
-      await writeDeliveryZones(zones);
+      const { data: existingZones, error: readError } = await supabase
+        .from('delivery_zones')
+        .select('id');
+      if (readError) throw readError;
+
+      const { error: upsertError } = await supabase
+        .from('delivery_zones')
+        .upsert(zones, { onConflict: 'id' });
+      if (upsertError) throw upsertError;
+
+      const retainedIds = new Set(zones.map((zone) => zone.id));
+      const removedIds = (existingZones || [])
+        .map((zone) => zone.id as string)
+        .filter((id) => !retainedIds.has(id));
+      if (removedIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('delivery_zones')
+          .delete()
+          .in('id', removedIds);
+        if (deleteError) throw deleteError;
+      }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ مناطق التوصيل السحابية' };
     }
@@ -132,7 +171,12 @@ export async function createProduct(
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
   const product = { id: productData.id || `product-${Date.now()}`, categoryLabel: '', ...productData } as Product;
   try {
-    if (isSupabaseConfigured()) await upsertProduct(product);
+    if (supabase) {
+      const { error } = await supabase
+        .from('products')
+        .upsert({ id: product.id, data: product }, { onConflict: 'id' });
+      if (error) throw error;
+    }
     writeStorage(PRODUCTS_KEY, [product, ...readStorage<Product[]>(PRODUCTS_KEY, [])]);
     return { success: true, product };
   } catch (error) {
@@ -150,7 +194,12 @@ export async function updateProduct(
     const existing = products.find((item) => item.id === productId);
     if (!existing) return { success: false, error: 'المنتج غير موجود' };
     const product = { ...existing, ...productData };
-    if (isSupabaseConfigured()) await upsertProduct(product);
+    if (supabase) {
+      const { error } = await supabase
+        .from('products')
+        .upsert({ id: product.id, data: product }, { onConflict: 'id' });
+      if (error) throw error;
+    }
     writeStorage(PRODUCTS_KEY, products.map((item) => item.id === productId ? product : item));
     return { success: true, product };
   } catch (error) {
@@ -163,7 +212,10 @@ export async function deleteProduct(
   _adminPassword: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (isSupabaseConfigured()) await removeProduct(productId);
+    if (supabase) {
+      const { error } = await supabase.from('products').delete().eq('id', productId);
+      if (error) throw error;
+    }
     const updatedProducts = (await fetchProducts()).filter((product) => product.id !== productId);
     writeStorage(PRODUCTS_KEY, updatedProducts);
     return { success: true };
