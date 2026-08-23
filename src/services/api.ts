@@ -7,9 +7,9 @@ const CONFIG_KEY = 'rifaq_app_config';
 const ORDERS_KEY = 'rifaq_orders';
 const PASSWORD_KEY = 'rifaq_admin_password';
 const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://szdyxrszodqfnahmxjpz.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6ZHl4cnN6b2RxZm5haG14anB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MTU2MTEsImV4cCI6MjEwMjk5MTYxMX0.OHYZOujMK_Rv0enERNCIRjAOtLipAvmBzK7e1v_K8Xs';
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 type ProductRow = {
   id: string;

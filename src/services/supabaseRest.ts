@@ -1,10 +1,10 @@
 import { AppConfig, DeliveryArea, PaymentAccounts, Product } from '../types';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const configured = Boolean(supabaseUrl && supabaseAnonKey);
-const supabase = configured ? createClient(supabaseUrl as string, supabaseAnonKey as string) : null;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://szdyxrszodqfnahmxjpz.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6ZHl4cnN6b2RxZm5haG14anB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MTU2MTEsImV4cCI6MjEwMjk5MTYxMX0.OHYZOujMK_Rv0enERNCIRjAOtLipAvmBzK7e1v_K8Xs';
+const configured = true;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 type SettingRow = { id: string; data: unknown };
 type ProductRow = {
