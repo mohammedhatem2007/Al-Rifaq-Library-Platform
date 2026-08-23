@@ -16,10 +16,9 @@ import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { CartItem, PrintJob, Product, Order, AppConfig, PricingConfig, SectionAvailability, DeliveryArea } from './types';
-import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, DEFAULT_DELIVERY_AREAS, PRODUCTS_DATA } from './data/mockData';
+import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, DEFAULT_DELIVERY_AREAS } from './data/mockData';
 import { fetchAppConfig, fetchDeliveryZones, fetchProducts } from './services/api';
 import { isSupabaseConfigured, subscribeToCatalog } from './services/supabaseRest';
-import { getStoredProducts, saveProducts } from './utils/productStorage';
 
 export default function App() {
   // Config state
@@ -32,7 +31,7 @@ export default function App() {
   });
 
   // Dynamic Products List
-  const [products, setProducts] = useState<Product[]>(() => getStoredProducts() || PRODUCTS_DATA);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Cart State (Persisted in localStorage for convenience)
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -66,14 +65,12 @@ export default function App() {
     void Promise.all([fetchAppConfig(), fetchProducts(), fetchDeliveryZones()]).then(([latestConfig, latestProducts, latestZones]) => {
       setConfig({ ...latestConfig, deliveryAreas: latestZones });
       setProducts(latestProducts);
-      saveProducts(latestProducts);
     }).catch((error) => console.warn('Cloud data load failed:', error));
 
     if (!isSupabaseConfigured()) return;
     return subscribeToCatalog(
       (latestProducts) => {
         setProducts(latestProducts);
-        saveProducts(latestProducts);
       },
       (latestZones) => setConfig((previous) => ({ ...previous, deliveryAreas: latestZones }))
     ) || undefined;
@@ -190,7 +187,6 @@ export default function App() {
 
   const handleProductsUpdated = (updatedProducts: Product[]) => {
     setProducts(updatedProducts);
-    saveProducts(updatedProducts);
   };
 
   if (isAdminRoute) {

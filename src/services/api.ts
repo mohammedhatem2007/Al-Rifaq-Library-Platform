@@ -4,10 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured, readSetting, writeSetting } from './supabaseRest';
 
 const CONFIG_KEY = 'rifaq_app_config';
-const PRODUCTS_KEY = 'rifaq_products';
 const ORDERS_KEY = 'rifaq_orders';
 const PASSWORD_KEY = 'rifaq_admin_password';
-const DELIVERY_ZONES_KEY = 'rifaq_delivery_zones';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -97,7 +95,6 @@ export async function fetchProducts(): Promise<Product[]> {
 
       if (rows && rows.length > 0) {
         const products = (rows as ProductRow[]).map((row) => row.data || ({ id: row.id } as Product));
-        writeStorage(PRODUCTS_KEY, products);
         return products;
       }
 
@@ -106,13 +103,12 @@ export async function fetchProducts(): Promise<Product[]> {
         { onConflict: 'id' }
       );
       if (seedError) throw seedError;
-      writeStorage(PRODUCTS_KEY, PRODUCTS_DATA);
       return PRODUCTS_DATA;
     } catch (error) {
       console.warn('Using local products fallback:', error);
     }
   }
-  return readStorage<Product[]>(PRODUCTS_KEY, PRODUCTS_DATA);
+  return PRODUCTS_DATA;
 }
 
 export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
@@ -124,17 +120,15 @@ export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
         .order('name', { ascending: true });
       if (error) throw error;
       const cloudZones = (zones || []) as DeliveryZoneRow[];
-      writeStorage(DELIVERY_ZONES_KEY, cloudZones);
       return cloudZones;
     } catch (error) {
       console.warn('Using local delivery zones fallback:', error);
     }
   }
-  return readStorage<DeliveryArea[]>(DELIVERY_ZONES_KEY, []);
+  return [];
 }
 
 export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ success: boolean; error?: string }> {
-  writeStorage(DELIVERY_ZONES_KEY, zones);
   if (supabase) {
     try {
       const { data: existingZones, error: readError } = await supabase
@@ -177,7 +171,6 @@ export async function createProduct(
         .upsert({ id: product.id, data: product }, { onConflict: 'id' });
       if (error) throw error;
     }
-    writeStorage(PRODUCTS_KEY, [product, ...readStorage<Product[]>(PRODUCTS_KEY, [])]);
     return { success: true, product };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ المنتج' };
@@ -200,7 +193,6 @@ export async function updateProduct(
         .upsert({ id: product.id, data: product }, { onConflict: 'id' });
       if (error) throw error;
     }
-    writeStorage(PRODUCTS_KEY, products.map((item) => item.id === productId ? product : item));
     return { success: true, product };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'تعذر تعديل المنتج' };
@@ -216,8 +208,6 @@ export async function deleteProduct(
       const { error } = await supabase.from('products').delete().eq('id', productId);
       if (error) throw error;
     }
-    const updatedProducts = (await fetchProducts()).filter((product) => product.id !== productId);
-    writeStorage(PRODUCTS_KEY, updatedProducts);
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حذف المنتج' };

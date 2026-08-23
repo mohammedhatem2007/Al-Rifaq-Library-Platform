@@ -37,7 +37,6 @@ import {
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
-import { saveProducts } from '../utils/productStorage';
 
 const ADMIN_PASSWORD = 'rifaq2026';
 
@@ -79,7 +78,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Delivery Areas Management State
   const [areaList, setAreaList] = useState<DeliveryArea[]>(() => {
-    if (deliveryAreas && deliveryAreas.length > 0) return deliveryAreas;
+    if (deliveryAreas) return deliveryAreas;
     return [
       { id: 'ucas', name: 'الكلية الجامعية للعلوم التطبيقية (UCAS)', fee: 3 },
       { id: 'iug', name: 'الجامعة الإسلامية بغزة (IUG)', fee: 3 },
@@ -131,7 +130,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [products]);
 
   useEffect(() => {
-    if (deliveryAreas && deliveryAreas.length > 0) {
+    if (deliveryAreas) {
       setAreaList(deliveryAreas);
     }
   }, [deliveryAreas]);
@@ -193,7 +192,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const prods = await fetchProducts();
       setProductList(prods);
       onProductsUpdated(prods);
-      saveProducts(prods);
     } catch (e) {
       console.error(e);
     }
