@@ -1,5 +1,5 @@
 import { AppConfig, DeliveryArea, Order, PricingConfig, SectionAvailability, Product } from '../types';
-import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, PRODUCTS_DATA } from '../data/mockData';
+import { DEFAULT_PRICING, DEFAULT_AVAILABILITY } from '../data/mockData';
 import { createClient } from '@supabase/supabase-js';
 import { isSupabaseConfigured, readSetting, writeSetting } from './supabaseRest';
 
@@ -98,17 +98,12 @@ export async function fetchProducts(): Promise<Product[]> {
         return products;
       }
 
-      const { error: seedError } = await supabase.from('products').upsert(
-        PRODUCTS_DATA.map((product) => ({ id: product.id, data: product })),
-        { onConflict: 'id' }
-      );
-      if (seedError) throw seedError;
-      return PRODUCTS_DATA;
+      return [];
     } catch (error) {
       console.warn('Using local products fallback:', error);
     }
   }
-  return PRODUCTS_DATA;
+  return [];
 }
 
 export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
