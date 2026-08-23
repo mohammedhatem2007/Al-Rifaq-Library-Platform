@@ -7,7 +7,17 @@ const configured = Boolean(supabaseUrl && supabaseAnonKey);
 const supabase = configured ? createClient(supabaseUrl as string, supabaseAnonKey as string) : null;
 
 type SettingRow = { id: string; data: unknown };
-type ProductRow = { id: string; data: Product };
+type ProductRow = {
+  id: string;
+  name: string;
+  category: Product['category'];
+  price: number;
+  originalprice: number | null;
+  discount: number | null;
+  image: string;
+  description: string;
+  instock: boolean;
+};
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!configured) throw new Error('Supabase is not configured');
@@ -48,35 +58,19 @@ export async function writeSetting(id: string, data: unknown): Promise<void> {
 }
 
 export async function readProducts(): Promise<Product[] | null> {
-  const rows = await request<ProductRow[]>('products?select=id,data&order=created_at.asc');
-  return rows.length > 0 ? rows.map((row) => row.data || ({ id: row.id } as Product)) : null;
-}
-
-export async function writeProducts(products: Product[]): Promise<void> {
-  const existing = await readProducts();
-  await request('products?on_conflict=id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(products.map((product) => ({ id: product.id, data: product, updated_at: new Date().toISOString() }))),
-  });
-
-  const retained = new Set(products.map((product) => product.id));
-  const removed = (existing || []).filter((product) => !retained.has(product.id)).map((product) => product.id);
-  if (removed.length > 0) {
-    await request(`products?id=in.(${removed.map(encodeURIComponent).join(',')})`, { method: 'DELETE' });
-  }
-}
-
-export async function upsertProduct(product: Product): Promise<void> {
-  await request('products?on_conflict=id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ id: product.id, data: product, updated_at: new Date().toISOString() }),
-  });
-}
-
-export async function removeProduct(productId: string): Promise<void> {
-  await request(`products?id=eq.${encodeURIComponent(productId)}`, { method: 'DELETE' });
+  const rows = await request<ProductRow[]>('products?select=id,name,category,price,originalprice,discount,image,description,instock&order=id.asc');
+  return rows.length > 0 ? rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    categoryLabel: row.category,
+    price: row.price,
+    originalPrice: row.originalprice ?? undefined,
+    discountPercentage: row.discount ?? undefined,
+    image: row.image,
+    description: row.description,
+    inStock: row.instock,
+  })) : null;
 }
 
 type DeliveryZoneRow = { id: string; name: string; fee: number };

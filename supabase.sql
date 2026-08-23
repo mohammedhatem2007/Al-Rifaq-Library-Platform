@@ -6,7 +6,14 @@ create table if not exists public.platform_settings (
 
 create table if not exists public.products (
   id text primary key,
-  data jsonb not null,
+  name text not null,
+  category text not null,
+  price numeric(10, 2) not null default 0,
+  originalprice numeric(10, 2),
+  discount numeric(10, 2),
+  image text not null default '',
+  description text not null default '',
+  instock boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

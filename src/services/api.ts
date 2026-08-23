@@ -10,8 +10,47 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
-type ProductRow = { id: string; data: Product };
+type ProductRow = {
+  id: string;
+  name: string;
+  category: Product['category'];
+  price: number;
+  originalprice: number | null;
+  discount: number | null;
+  image: string;
+  description: string;
+  instock: boolean;
+};
 type DeliveryZoneRow = DeliveryArea;
+
+function toProduct(row: ProductRow): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    categoryLabel: row.category,
+    price: row.price,
+    originalPrice: row.originalprice ?? undefined,
+    discountPercentage: row.discount ?? undefined,
+    image: row.image,
+    description: row.description,
+    inStock: row.instock,
+  };
+}
+
+function toProductRow(product: Product): ProductRow {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    originalprice: product.originalPrice ?? null,
+    discount: product.discountPercentage ?? null,
+    image: product.image,
+    description: product.description,
+    instock: product.inStock,
+  };
+}
 
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -89,13 +128,15 @@ export async function fetchProducts(): Promise<Product[]> {
     try {
       const { data: rows, error } = await supabase
         .from('products')
-        .select('id,data')
-        .order('created_at', { ascending: true });
-      if (error) throw error;
+        .select('id,name,category,price,originalprice,discount,image,description,instock')
+        .order('id', { ascending: true });
+      if (error) {
+        console.error('Supabase product fetch failed:', error);
+        throw error;
+      }
 
       if (rows && rows.length > 0) {
-        const products = (rows as ProductRow[]).map((row) => row.data || ({ id: row.id } as Product));
-        return products;
+        return (rows as ProductRow[]).map(toProduct);
       }
 
       return [];
@@ -163,8 +204,11 @@ export async function createProduct(
     if (supabase) {
       const { error } = await supabase
         .from('products')
-        .upsert({ id: product.id, data: product }, { onConflict: 'id' });
-      if (error) throw error;
+        .insert(toProductRow(product));
+      if (error) {
+        console.error('Supabase product insert failed:', error);
+        throw error;
+      }
     }
     return { success: true, product };
   } catch (error) {
@@ -185,8 +229,11 @@ export async function updateProduct(
     if (supabase) {
       const { error } = await supabase
         .from('products')
-        .upsert({ id: product.id, data: product }, { onConflict: 'id' });
-      if (error) throw error;
+        .upsert(toProductRow(product), { onConflict: 'id' });
+      if (error) {
+        console.error('Supabase product update failed:', error);
+        throw error;
+      }
     }
     return { success: true, product };
   } catch (error) {
@@ -201,7 +248,10 @@ export async function deleteProduct(
   try {
     if (supabase) {
       const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase product delete failed:', error);
+        throw error;
+      }
     }
     return { success: true };
   } catch (error) {
