@@ -17,7 +17,8 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { CartItem, PrintJob, Product, Order, AppConfig, PricingConfig, SectionAvailability, DeliveryArea } from './types';
 import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, DEFAULT_DELIVERY_AREAS, PRODUCTS_DATA } from './data/mockData';
-import { fetchAppConfig, fetchProducts } from './services/api';
+import { fetchAppConfig, fetchDeliveryZones, fetchProducts } from './services/api';
+import { isSupabaseConfigured, subscribeToCatalog } from './services/supabaseRest';
 import { getStoredProducts, saveProducts } from './utils/productStorage';
 
 export default function App() {
@@ -60,18 +61,22 @@ export default function App() {
   const [trackerInitialId, setTrackerInitialId] = useState<string>('');
   const [lastCreatedOrder, setLastCreatedOrder] = useState<Order | null>(null);
 
-  // Load backend configuration and products on mount
+  // Load cloud catalog and keep every open client synchronized.
   useEffect(() => {
-    fetchAppConfig().then((data) => {
-      if (data) setConfig(data);
-    });
+    void Promise.all([fetchAppConfig(), fetchProducts(), fetchDeliveryZones()]).then(([latestConfig, latestProducts, latestZones]) => {
+      setConfig({ ...latestConfig, deliveryAreas: latestZones });
+      setProducts(latestProducts);
+      saveProducts(latestProducts);
+    }).catch((error) => console.warn('Cloud data load failed:', error));
 
-    fetchProducts().then((prods) => {
-      if (prods && prods.length > 0 && !getStoredProducts()) {
-        setProducts(prods);
-        saveProducts(prods);
-      }
-    });
+    if (!isSupabaseConfigured()) return;
+    return subscribeToCatalog(
+      (latestProducts) => {
+        setProducts(latestProducts);
+        saveProducts(latestProducts);
+      },
+      (latestZones) => setConfig((previous) => ({ ...previous, deliveryAreas: latestZones }))
+    ) || undefined;
   }, []);
 
   // Save cart to local storage

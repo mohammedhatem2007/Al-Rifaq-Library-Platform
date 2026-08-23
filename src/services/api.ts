@@ -1,10 +1,12 @@
-import { AppConfig, Order, PricingConfig, SectionAvailability, Product } from '../types';
+import { AppConfig, DeliveryArea, Order, PricingConfig, SectionAvailability, Product } from '../types';
 import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, PRODUCTS_DATA } from '../data/mockData';
+import { isSupabaseConfigured, readDeliveryZones, readProducts, readSetting, removeProduct, upsertProduct, writeDeliveryZones, writeSetting } from './supabaseRest';
 
 const CONFIG_KEY = 'rifaq_app_config';
 const PRODUCTS_KEY = 'rifaq_products';
 const ORDERS_KEY = 'rifaq_orders';
 const PASSWORD_KEY = 'rifaq_admin_password';
+const DELIVERY_ZONES_KEY = 'rifaq_delivery_zones';
 
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
@@ -33,7 +35,19 @@ function defaultConfig(): AppConfig {
 }
 
 export async function fetchAppConfig(): Promise<AppConfig> {
-  return { ...defaultConfig(), ...readStorage<Partial<AppConfig>>(CONFIG_KEY, {}) };
+  const localConfig = { ...defaultConfig(), ...readStorage<Partial<AppConfig>>(CONFIG_KEY, {}) };
+  if (isSupabaseConfigured()) {
+    try {
+      const cloudConfig = await readSetting<AppConfig>('app_config');
+      if (cloudConfig) {
+        writeStorage(CONFIG_KEY, cloudConfig);
+        return cloudConfig;
+      }
+    } catch (error) {
+      console.warn('Using local config fallback:', error);
+    }
+  }
+  return localConfig;
 }
 
 export async function updateAppConfig(
@@ -43,7 +57,15 @@ export async function updateAppConfig(
   deliveryAreas?: import('../types').DeliveryArea[]
 ): Promise<{ success: boolean; error?: string }> {
   const config = await fetchAppConfig();
-  writeStorage(CONFIG_KEY, { ...config, pricing, availability, deliveryAreas: deliveryAreas || config.deliveryAreas });
+  const updatedConfig = { ...config, pricing, availability, deliveryAreas: deliveryAreas || config.deliveryAreas };
+  writeStorage(CONFIG_KEY, updatedConfig);
+  if (isSupabaseConfigured()) {
+    try {
+      await writeSetting('app_config', updatedConfig);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ الإعدادات السحابية' };
+    }
+  }
   return { success: true };
 }
 
@@ -58,16 +80,64 @@ export async function updateAdminPassword(
 }
 
 export async function fetchProducts(): Promise<Product[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const cloudProducts = await readProducts();
+      if (cloudProducts) {
+        writeStorage(PRODUCTS_KEY, cloudProducts);
+        return cloudProducts;
+      }
+      await Promise.all(PRODUCTS_DATA.map((product) => upsertProduct(product)));
+      writeStorage(PRODUCTS_KEY, PRODUCTS_DATA);
+      return PRODUCTS_DATA;
+    } catch (error) {
+      console.warn('Using local products fallback:', error);
+    }
+  }
   return readStorage<Product[]>(PRODUCTS_KEY, PRODUCTS_DATA);
+}
+
+export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const cloudZones = await readDeliveryZones();
+      if (cloudZones) {
+        writeStorage(DELIVERY_ZONES_KEY, cloudZones);
+        return cloudZones;
+      }
+      writeStorage(DELIVERY_ZONES_KEY, []);
+      return [];
+    } catch (error) {
+      console.warn('Using local delivery zones fallback:', error);
+    }
+  }
+  return readStorage<DeliveryArea[]>(DELIVERY_ZONES_KEY, []);
+}
+
+export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ success: boolean; error?: string }> {
+  writeStorage(DELIVERY_ZONES_KEY, zones);
+  if (isSupabaseConfigured()) {
+    try {
+      await writeDeliveryZones(zones);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ مناطق التوصيل السحابية' };
+    }
+  }
+  return { success: true };
 }
 
 export async function createProduct(
   productData: Partial<Product>,
   _adminPassword: string
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
-  const product = { id: `product-${Date.now()}`, categoryLabel: '', ...productData } as Product;
-  writeStorage(PRODUCTS_KEY, [product, ...await fetchProducts()]);
-  return { success: true, product };
+  const product = { id: productData.id || `product-${Date.now()}`, categoryLabel: '', ...productData } as Product;
+  try {
+    if (isSupabaseConfigured()) await upsertProduct(product);
+    writeStorage(PRODUCTS_KEY, [product, ...readStorage<Product[]>(PRODUCTS_KEY, [])]);
+    return { success: true, product };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ المنتج' };
+  }
 }
 
 export async function updateProduct(
@@ -75,20 +145,31 @@ export async function updateProduct(
   productData: Partial<Product>,
   _adminPassword: string
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
-  const products = await fetchProducts();
-  const existing = products.find((product) => product.id === productId);
-  if (!existing) return { success: false, error: 'المنتج غير موجود' };
-  const product = { ...existing, ...productData };
-  writeStorage(PRODUCTS_KEY, products.map((item) => item.id === productId ? product : item));
-  return { success: true, product };
+  try {
+    const products = await fetchProducts();
+    const existing = products.find((item) => item.id === productId);
+    if (!existing) return { success: false, error: 'المنتج غير موجود' };
+    const product = { ...existing, ...productData };
+    if (isSupabaseConfigured()) await upsertProduct(product);
+    writeStorage(PRODUCTS_KEY, products.map((item) => item.id === productId ? product : item));
+    return { success: true, product };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر تعديل المنتج' };
+  }
 }
 
 export async function deleteProduct(
   productId: string,
   _adminPassword: string
 ): Promise<{ success: boolean; error?: string }> {
-  writeStorage(PRODUCTS_KEY, (await fetchProducts()).filter((product) => product.id !== productId));
-  return { success: true };
+  try {
+    if (isSupabaseConfigured()) await removeProduct(productId);
+    const updatedProducts = (await fetchProducts()).filter((product) => product.id !== productId);
+    writeStorage(PRODUCTS_KEY, updatedProducts);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر حذف المنتج' };
+  }
 }
 
 export async function submitOrder(orderData: Partial<Order>): Promise<{ success: boolean; order?: Order; error?: string }> {

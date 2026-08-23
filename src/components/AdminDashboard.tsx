@@ -28,11 +28,16 @@ import {
   updateAppConfig, 
   updateAdminPassword,
   fetchProducts,
+  fetchDeliveryZones,
+  updateDeliveryZones,
+  createProduct,
+  updateProduct,
+  deleteProduct,
   openWhatsAppChat
 } from '../services/api';
 import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
-import { getStoredProducts, saveProducts } from '../utils/productStorage';
+import { saveProducts } from '../utils/productStorage';
 
 const ADMIN_PASSWORD = 'rifaq2026';
 
@@ -185,13 +190,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const loadLatestProducts = async () => {
     try {
-      const storedProducts = getStoredProducts();
-      if (storedProducts) {
-        setProductList(storedProducts);
-        onProductsUpdated(storedProducts);
-        return;
-      }
-
       const prods = await fetchProducts();
       setProductList(prods);
       onProductsUpdated(prods);
@@ -283,11 +281,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     setAreaList(updatedAreas);
     onConfigUpdated(pricingForm, availability, updatedAreas);
-    const res = await updateAppConfig(pricingForm, availability, passwordInput, updatedAreas);
-    if (res.success) {
+    const [configResult, zonesResult] = await Promise.all([
+      updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
+      updateDeliveryZones(updatedAreas),
+    ]);
+    if (configResult.success && zonesResult.success) {
       setIsAreaModalOpen(false);
     } else {
-      setAreaActionMsg(res.error || 'تعذر حفظ المنطقة');
+      setAreaActionMsg(configResult.error || zonesResult.error || 'تعذر حفظ المنطقة');
     }
   };
 
@@ -296,7 +297,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const updatedAreas = areaList.filter((a) => a.id !== areaId);
     setAreaList(updatedAreas);
     onConfigUpdated(pricingForm, availability, updatedAreas);
-    await updateAppConfig(pricingForm, availability, passwordInput, updatedAreas);
+    await Promise.all([
+      updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
+      updateDeliveryZones(updatedAreas),
+    ]);
   };
 
   const handleUpdateAreaFeeQuick = async (areaId: string, newFee: number) => {
@@ -304,7 +308,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const updatedAreas = areaList.map((a) => (a.id === areaId ? { ...a, fee: feeNum } : a));
     setAreaList(updatedAreas);
     onConfigUpdated(pricingForm, availability, updatedAreas);
-    await updateAppConfig(pricingForm, availability, passwordInput, updatedAreas);
+    await Promise.all([
+      updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
+      updateDeliveryZones(updatedAreas),
+    ]);
   };
 
   // Handle Password Change
@@ -393,7 +400,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Save Product (Create or Update with Automatic Discount Calculation)
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = parseFloat(productForm.price) || 0;
     const origPriceNum = productForm.originalPrice ? parseFloat(productForm.originalPrice) : undefined;
@@ -421,14 +428,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
 
     if (editingProduct) {
-      const updated = productList.map((product) =>
-        product.id === editingProduct.id
-          ? { ...product, ...productDetails }
-          : product
-      );
+      const result = await updateProduct(editingProduct.id, productDetails, passwordInput);
+      if (!result.success || !result.product) {
+        setProductActionMsg(result.error || 'تعذر تعديل المنتج');
+        return;
+      }
+      const updated = productList.map((product) => product.id === editingProduct.id ? result.product as Product : product);
       setProductList(updated);
       onProductsUpdated(updated);
-      saveProducts(updated);
       setProductActionMsg('تم تعديل المنتج والخصم بنجاح!');
     } else {
       const categoryLabels: Record<ProductCategory, string> = {
@@ -440,15 +447,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         medical: 'قسم الأدوات الطبية',
         notebooks: 'قسم الدفاتر',
       };
-      const newProduct: Product = {
-        id: `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        categoryLabel: categoryLabels[productForm.category],
-        ...productDetails,
-      };
+      const result = await createProduct({ ...productDetails, categoryLabel: categoryLabels[productForm.category] }, passwordInput);
+      if (!result.success || !result.product) {
+        setProductActionMsg(result.error || 'تعذر إضافة المنتج');
+        return;
+      }
+      const newProduct = result.product;
       const updated = [newProduct, ...productList];
       setProductList(updated);
       onProductsUpdated(updated);
-      saveProducts(updated);
       setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
     }
 
@@ -457,12 +464,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Delete Product
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) return;
+    const result = await deleteProduct(id, passwordInput);
+    if (!result.success) {
+      setProductActionMsg(result.error || 'تعذر حذف المنتج');
+      return;
+    }
     const updated = productList.filter((product) => product.id !== id);
     setProductList(updated);
     onProductsUpdated(updated);
-    saveProducts(updated);
     setProductActionMsg('تم حذف المنتج بنجاح');
     setTimeout(() => setProductActionMsg(null), 3000);
   };
