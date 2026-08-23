@@ -6,6 +6,7 @@ import { isSupabaseConfigured, readSetting, writeSetting } from './supabaseRest'
 const CONFIG_KEY = 'rifaq_app_config';
 const ORDERS_KEY = 'rifaq_orders';
 const PASSWORD_KEY = 'rifaq_admin_password';
+const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
@@ -50,6 +51,13 @@ function toProductRow(product: Product): ProductRow {
     description: product.description,
     instock: product.inStock,
   };
+}
+
+function normalizeProductImage(image: string | undefined): string {
+  if (!image || (image.startsWith('data:') && image.length > 1_000_000)) {
+    return PRODUCT_IMAGE_PLACEHOLDER;
+  }
+  return image;
 }
 
 function readStorage<T>(key: string, fallback: T): T {
@@ -130,6 +138,7 @@ export async function fetchProducts(): Promise<Product[]> {
         .from('products')
         .select('id,name,category,price,originalprice,discount,image,description,instock')
         .order('id', { ascending: true });
+      console.log('Supabase fetch response:', { data: rows, error });
       if (error) {
         console.error('Supabase product fetch failed:', error);
         throw error;
@@ -196,16 +205,22 @@ export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ succ
   return { success: true };
 }
 
-export async function createProduct(
+export async function addProduct(
   productData: Partial<Product>,
   _adminPassword: string
 ): Promise<{ success: boolean; product?: Product; error?: string }> {
-  const product = { id: productData.id || `product-${Date.now()}`, categoryLabel: '', ...productData } as Product;
+  const product = {
+    id: productData.id || `product-${Date.now()}`,
+    categoryLabel: '',
+    ...productData,
+    image: normalizeProductImage(productData.image),
+  } as Product;
   try {
     if (supabase) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .insert(toProductRow(product));
+      console.log('Supabase insert response:', { data, error });
       if (error) throw error;
     }
     return { success: true, product };
@@ -214,6 +229,8 @@ export async function createProduct(
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ المنتج' };
   }
 }
+
+export const createProduct = addProduct;
 
 export async function updateProduct(
   productId: string,
@@ -224,7 +241,11 @@ export async function updateProduct(
     const products = await fetchProducts();
     const existing = products.find((item) => item.id === productId);
     if (!existing) return { success: false, error: 'المنتج غير موجود' };
-    const product = { ...existing, ...productData };
+    const product = {
+      ...existing,
+      ...productData,
+      image: normalizeProductImage(productData.image ?? existing.image),
+    };
     if (supabase) {
       const { error } = await supabase
         .from('products')

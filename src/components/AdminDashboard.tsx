@@ -30,7 +30,7 @@ import {
   fetchProducts,
   fetchDeliveryZones,
   updateDeliveryZones,
-  createProduct,
+  addProduct,
   updateProduct,
   deleteProduct,
   openWhatsAppChat
@@ -39,6 +39,7 @@ import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
 
 const ADMIN_PASSWORD = 'rifaq2026';
+const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -403,12 +404,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setProductForm((current) => ({ ...current, image: reader.result as string }));
-        setProductActionMsg(null);
+      if (typeof reader.result !== 'string') {
+        setProductForm((current) => ({ ...current, image: PRODUCT_IMAGE_PLACEHOLDER }));
+        setProductActionMsg('تعذر معالجة الصورة، تم استخدام صورة افتراضية');
+        return;
       }
+
+      const image = new Image();
+      image.onload = () => {
+        const maxDimension = 1200;
+        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          setProductForm((current) => ({ ...current, image: PRODUCT_IMAGE_PLACEHOLDER }));
+          setProductActionMsg('تعذر ضغط الصورة، تم استخدام صورة افتراضية');
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressedImage = canvas.toDataURL('image/jpeg', 0.8);
+        setProductForm((current) => ({ ...current, image: compressedImage }));
+        setProductActionMsg(null);
+      };
+      image.onerror = () => {
+        setProductForm((current) => ({ ...current, image: PRODUCT_IMAGE_PLACEHOLDER }));
+        setProductActionMsg('تعذر تحميل الصورة، تم استخدام صورة افتراضية');
+      };
+      image.src = reader.result;
     };
-    reader.onerror = () => setProductActionMsg('تعذر قراءة ملف الصورة');
+    reader.onerror = () => {
+      setProductForm((current) => ({ ...current, image: PRODUCT_IMAGE_PLACEHOLDER }));
+      setProductActionMsg('تعذر قراءة الصورة، تم استخدام صورة افتراضية');
+    };
     reader.readAsDataURL(file);
   };
 
@@ -463,7 +492,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         medical: 'قسم الأدوات الطبية',
         notebooks: 'قسم الدفاتر',
       };
-      const result = await createProduct({ ...productDetails, categoryLabel: categoryLabels[productForm.category] }, passwordInput);
+      const result = await addProduct({ ...productDetails, categoryLabel: categoryLabels[productForm.category] }, passwordInput);
       if (!result.success || !result.product) {
         const errorMessage = result.error || 'تعذر إضافة المنتج';
         console.error('Supabase Error:', errorMessage);
@@ -471,8 +500,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setProductActionMsg(errorMessage);
         return;
       }
-      const newProduct = result.product;
-      const updated = [newProduct, ...productList];
+      const updated = await fetchProducts();
       setProductList(updated);
       onProductsUpdated(updated);
       setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
