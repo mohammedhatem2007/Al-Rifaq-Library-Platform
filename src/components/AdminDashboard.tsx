@@ -496,7 +496,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (!result.success || !result.product) {
         const errorMessage = result.error || 'تعذر إضافة المنتج';
         console.error('Supabase Error:', errorMessage);
-        alert(errorMessage);
+        alert('Supabase Error: ' + errorMessage);
         setProductActionMsg(errorMessage);
         return;
       }
