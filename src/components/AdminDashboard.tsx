@@ -277,39 +277,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       updatedAreas = [...areaList, newArea];
     }
 
-    setAreaList(updatedAreas);
-    onConfigUpdated(pricingForm, availability, updatedAreas);
     const [configResult, zonesResult] = await Promise.all([
       updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
       updateDeliveryZones(updatedAreas),
     ]);
     if (configResult.success && zonesResult.success) {
+      setAreaList(updatedAreas);
+      onConfigUpdated(pricingForm, availability, updatedAreas);
       setIsAreaModalOpen(false);
     } else {
-      setAreaActionMsg(configResult.error || zonesResult.error || 'تعذر حفظ المنطقة');
+      const errorMessage = configResult.error || zonesResult.error || 'تعذر حفظ المنطقة';
+      console.error('Supabase Error:', errorMessage);
+      alert(errorMessage);
+      setAreaActionMsg(errorMessage);
     }
   };
 
   const handleDeleteArea = async (areaId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه المنطقة؟')) return;
     const updatedAreas = areaList.filter((a) => a.id !== areaId);
-    setAreaList(updatedAreas);
-    onConfigUpdated(pricingForm, availability, updatedAreas);
-    await Promise.all([
+    const [configResult, zonesResult] = await Promise.all([
       updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
       updateDeliveryZones(updatedAreas),
     ]);
+    if (configResult.success && zonesResult.success) {
+      setAreaList(updatedAreas);
+      onConfigUpdated(pricingForm, availability, updatedAreas);
+      return;
+    }
+    const errorMessage = configResult.error || zonesResult.error || 'تعذر حذف المنطقة';
+    console.error('Supabase Error:', errorMessage);
+    alert(errorMessage);
   };
 
   const handleUpdateAreaFeeQuick = async (areaId: string, newFee: number) => {
     const feeNum = Math.max(0, newFee);
     const updatedAreas = areaList.map((a) => (a.id === areaId ? { ...a, fee: feeNum } : a));
-    setAreaList(updatedAreas);
-    onConfigUpdated(pricingForm, availability, updatedAreas);
-    await Promise.all([
+    const [configResult, zonesResult] = await Promise.all([
       updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
       updateDeliveryZones(updatedAreas),
     ]);
+    if (configResult.success && zonesResult.success) {
+      setAreaList(updatedAreas);
+      onConfigUpdated(pricingForm, availability, updatedAreas);
+      return;
+    }
+    const errorMessage = configResult.error || zonesResult.error || 'تعذر تحديث رسوم المنطقة';
+    console.error('Supabase Error:', errorMessage);
+    alert(errorMessage);
   };
 
   // Handle Password Change
@@ -428,7 +443,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (editingProduct) {
       const result = await updateProduct(editingProduct.id, productDetails, passwordInput);
       if (!result.success || !result.product) {
-        setProductActionMsg(result.error || 'تعذر تعديل المنتج');
+        const errorMessage = result.error || 'تعذر تعديل المنتج';
+        console.error('Supabase Error:', errorMessage);
+        alert(errorMessage);
+        setProductActionMsg(errorMessage);
         return;
       }
       const updated = productList.map((product) => product.id === editingProduct.id ? result.product as Product : product);
@@ -447,7 +465,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
       const result = await createProduct({ ...productDetails, categoryLabel: categoryLabels[productForm.category] }, passwordInput);
       if (!result.success || !result.product) {
-        setProductActionMsg(result.error || 'تعذر إضافة المنتج');
+        const errorMessage = result.error || 'تعذر إضافة المنتج';
+        console.error('Supabase Error:', errorMessage);
+        alert(errorMessage);
+        setProductActionMsg(errorMessage);
         return;
       }
       const newProduct = result.product;
@@ -457,6 +478,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setProductActionMsg('تمت إضافة المنتج الجديد بنجاح!');
     }
 
+    console.log('Product saved successfully');
     setIsProductModalOpen(false);
     setTimeout(() => setProductActionMsg(null), 3000);
   };
@@ -466,7 +488,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!window.confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) return;
     const result = await deleteProduct(id, passwordInput);
     if (!result.success) {
-      setProductActionMsg(result.error || 'تعذر حذف المنتج');
+      const errorMessage = result.error || 'تعذر حذف المنتج';
+      console.error('Supabase Error:', errorMessage);
+      alert(errorMessage);
+      setProductActionMsg(errorMessage);
       return;
     }
     const updated = productList.filter((product) => product.id !== id);

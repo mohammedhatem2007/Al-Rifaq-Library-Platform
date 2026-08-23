@@ -189,6 +189,7 @@ export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ succ
         if (deleteError) throw deleteError;
       }
     } catch (error) {
+      console.error('Supabase Error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ مناطق التوصيل السحابية' };
     }
   }
@@ -205,13 +206,11 @@ export async function createProduct(
       const { error } = await supabase
         .from('products')
         .insert(toProductRow(product));
-      if (error) {
-        console.error('Supabase product insert failed:', error);
-        throw error;
-      }
+      if (error) throw error;
     }
     return { success: true, product };
   } catch (error) {
+    console.error('Supabase Error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ المنتج' };
   }
 }
@@ -230,13 +229,11 @@ export async function updateProduct(
       const { error } = await supabase
         .from('products')
         .upsert(toProductRow(product), { onConflict: 'id' });
-      if (error) {
-        console.error('Supabase product update failed:', error);
-        throw error;
-      }
+      if (error) throw error;
     }
     return { success: true, product };
   } catch (error) {
+    console.error('Supabase Error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'تعذر تعديل المنتج' };
   }
 }
@@ -248,13 +245,11 @@ export async function deleteProduct(
   try {
     if (supabase) {
       const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) {
-        console.error('Supabase product delete failed:', error);
-        throw error;
-      }
+      if (error) throw error;
     }
     return { success: true };
   } catch (error) {
+    console.error('Supabase Error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حذف المنتج' };
   }
 }
