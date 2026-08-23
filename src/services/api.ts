@@ -216,16 +216,25 @@ export async function addProduct(
     image: normalizeProductImage(productData.image),
   } as Product;
   try {
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('products')
-        .insert(toProductRow(product));
-      console.log('Supabase insert response:', { data, error });
-      if (error) throw error;
+    if (!supabase) {
+      const error = new Error('Supabase client is not initialized');
+      alert('Failed: ' + JSON.stringify(error));
+      return { success: false, error: error.message };
     }
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert(toProductRow(product));
+    console.log('Supabase Insert Result:', { data, error });
+    if (error) {
+      alert('Failed: ' + JSON.stringify(error));
+      return { success: false, error: error.message };
+    }
+
     return { success: true, product };
   } catch (error) {
     console.error('Supabase Error:', error);
+    alert('Failed: ' + JSON.stringify(error));
     return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ المنتج' };
   }
 }
