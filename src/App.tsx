@@ -153,12 +153,6 @@ export default function App() {
     handleClearAll();
   };
 
-  const handleTrackFromSuccess = (orderId: string) => {
-    setLastCreatedOrder(null);
-    setTrackerInitialId(orderId);
-    setIsTrackerOpen(true);
-  };
-
   const handleNavigate = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -289,7 +283,6 @@ export default function App() {
       <OrderSuccessModal
         order={lastCreatedOrder}
         onClose={() => setLastCreatedOrder(null)}
-        onTrackOrder={handleTrackFromSuccess}
       />
 
       {/* Order Tracker Modal */}
