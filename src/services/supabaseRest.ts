@@ -75,23 +75,48 @@ export async function readProducts(): Promise<Product[] | null> {
 
 type DeliveryZoneRow = { id: string; name: string; price: number };
 
-export async function readDeliveryZones(): Promise<DeliveryArea[] | null> {
-  const rows = await request<DeliveryZoneRow[]>('delivery_zones?select=id,name,price&order=name.asc');
-  return rows.length > 0 ? rows.map((zone) => ({ ...zone, fee: zone.price })) : null;
+function toDeliveryArea(row: DeliveryZoneRow): DeliveryArea {
+  return { id: row.id, name: row.name, fee: row.price };
 }
 
+export async function getDeliveryZones(): Promise<DeliveryArea[]> {
+  const { data: rows, error } = await supabase
+    .from('delivery_zones')
+    .select('id,name,price')
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return ((rows || []) as DeliveryZoneRow[]).map(toDeliveryArea);
+}
+
+export async function addDeliveryZone(zone: DeliveryArea): Promise<void> {
+  const { error } = await supabase
+    .from('delivery_zones')
+    .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+export async function deleteDeliveryZone(zoneId: string): Promise<void> {
+  const { error } = await supabase.from('delivery_zones').delete().eq('id', zoneId);
+  if (error) throw error;
+}
+
+export const readDeliveryZones = async (): Promise<DeliveryArea[] | null> => {
+  const zones = await getDeliveryZones();
+  return zones.length > 0 ? zones : null;
+};
+
 export async function writeDeliveryZones(zones: DeliveryArea[]): Promise<void> {
-  const existing = await readDeliveryZones();
-  await request('delivery_zones?on_conflict=id', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(zones.map(({ id, name, fee }) => ({ id, name, price: fee, updated_at: new Date().toISOString() }))),
-  });
+  const existing = await getDeliveryZones();
+  const { error } = await supabase
+    .from('delivery_zones')
+    .upsert(zones.map(({ id, name, fee }) => ({ id, name, price: fee })), { onConflict: 'id' });
+  if (error) throw error;
 
   const retained = new Set(zones.map((zone) => zone.id));
-  const removed = (existing || []).filter((zone) => !retained.has(zone.id)).map((zone) => zone.id);
+  const removed = existing.filter((zone) => !retained.has(zone.id)).map((zone) => zone.id);
   if (removed.length > 0) {
-    await request(`delivery_zones?id=in.(${removed.map(encodeURIComponent).join(',')})`, { method: 'DELETE' });
+    const { error: deleteError } = await supabase.from('delivery_zones').delete().in('id', removed);
+    if (deleteError) throw deleteError;
   }
 }
 

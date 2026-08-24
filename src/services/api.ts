@@ -24,6 +24,10 @@ type ProductRow = {
 };
 type DeliveryZoneRow = { id: string; name: string; price: number };
 
+function toDeliveryArea(row: DeliveryZoneRow): DeliveryArea {
+  return { id: row.id, name: row.name, fee: row.price };
+}
+
 function toProduct(row: ProductRow): Product {
   return {
     id: row.id,
@@ -156,7 +160,7 @@ export async function fetchProducts(): Promise<Product[]> {
   return [];
 }
 
-export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
+export async function getDeliveryZones(): Promise<DeliveryArea[]> {
   if (supabase) {
     try {
       const { data: zones, error } = await supabase
@@ -165,12 +169,38 @@ export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
         .order('name', { ascending: true });
       if (error) throw error;
       const cloudZones = (zones || []) as DeliveryZoneRow[];
-      return cloudZones.map((zone) => ({ ...zone, fee: zone.price }));
+      return cloudZones.map(toDeliveryArea);
     } catch (error) {
-      console.warn('Using local delivery zones fallback:', error);
+      console.error('Supabase delivery zones fetch failed:', error);
     }
   }
   return [];
+}
+
+export const fetchDeliveryZones = getDeliveryZones;
+
+export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Supabase client is not initialized' };
+  try {
+    const { error } = await supabase
+      .from('delivery_zones')
+      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id' });
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
+  }
+}
+
+export async function deleteDeliveryZone(zoneId: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Supabase client is not initialized' };
+  try {
+    const { error } = await supabase.from('delivery_zones').delete().eq('id', zoneId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر حذف منطقة التوصيل' };
+  }
 }
 
 export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ success: boolean; error?: string }> {

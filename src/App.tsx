@@ -16,7 +16,7 @@ import { OrderTrackerModal } from './components/OrderTrackerModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Footer } from './components/Footer';
 import { CartItem, PrintJob, Product, Order, AppConfig, PricingConfig, SectionAvailability, DeliveryArea } from './types';
-import { DEFAULT_PRICING, DEFAULT_AVAILABILITY, DEFAULT_DELIVERY_AREAS } from './data/mockData';
+import { DEFAULT_PRICING, DEFAULT_AVAILABILITY } from './data/mockData';
 import { fetchAppConfig, fetchDeliveryZones, fetchProducts } from './services/api';
 import { isSupabaseConfigured, subscribeToCatalog } from './services/supabaseRest';
 
@@ -25,7 +25,7 @@ export default function App() {
   const [config, setConfig] = useState<AppConfig>({
     pricing: DEFAULT_PRICING,
     availability: DEFAULT_AVAILABILITY,
-    deliveryAreas: DEFAULT_DELIVERY_AREAS,
+    deliveryAreas: [],
     adminEmail: 'mnassar37@smail.ucas.edu.ps',
     whatsappNumber: '+972592480383',
   });

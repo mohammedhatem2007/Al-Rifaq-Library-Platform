@@ -16,7 +16,6 @@ import {
   Send
 } from 'lucide-react';
 import { CartItem, PrintJob, PaymentMethod, DeliveryMethod, Order, DeliveryArea } from '../types';
-import { DELIVERY_AREAS as DEFAULT_DELIVERY_AREAS } from '../data/mockData';
 import { submitOrder, generateWhatsAppOrderMessage, openWhatsAppChat } from '../services/api';
 import { usePaymentAccounts } from '../utils/paymentAccounts';
 
@@ -42,7 +41,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   deliveryAreas,
   onOrderSuccess,
 }) => {
-  const activeAreas = deliveryAreas && deliveryAreas.length > 0 ? deliveryAreas : DEFAULT_DELIVERY_AREAS;
+  const activeAreas = deliveryAreas || [];
   const paymentAccounts = usePaymentAccounts();
 
   // Form State
@@ -76,8 +75,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const itemsSubtotal = roundTotal(printingSubtotal + stationerySubtotal);
 
   // Delivery Fee Calculation
-  const selectedAreaObj = activeAreas.find((a) => a.id === selectedAreaId) || activeAreas[0] || { id: 'default', name: 'المدينة', fee: 5 };
-  const deliveryFee = deliveryMethod === 'delivery' ? selectedAreaObj.fee : 0;
+  const selectedAreaObj = activeAreas.find((a) => a.id === selectedAreaId) || activeAreas[0];
+  const deliveryFee = deliveryMethod === 'delivery' ? selectedAreaObj?.fee || 0 : 0;
   const grandTotal = roundTotal(itemsSubtotal + deliveryFee);
 
   // Copy helper

@@ -80,17 +80,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Delivery Areas Management State
   const [areaList, setAreaList] = useState<DeliveryArea[]>(() => {
     if (deliveryAreas) return deliveryAreas;
-    return [
-      { id: 'ucas', name: 'الكلية الجامعية للعلوم التطبيقية (UCAS)', fee: 3 },
-      { id: 'iug', name: 'الجامعة الإسلامية بغزة (IUG)', fee: 3 },
-      { id: 'alazhar', name: 'جامعة الأزهر - المقر الرئيسي وحرم المغراقة', fee: 3 },
-      { id: 'alaqsa', name: 'جامعة الأقصى (غزة / خانيونس)', fee: 4 },
-      { id: 'gaza_center', name: 'مدينة غزة (الرمال، النصر، الصبرة، الدرج، التفاح)', fee: 5 },
-      { id: 'gaza_west', name: 'غرب غزة (الميناء، أنصار، تل الهوا)', fee: 5 },
-      { id: 'north_gaza', name: 'شمال غزة (جباليا، بيت لاهيا، بيت حانون)', fee: 7 },
-      { id: 'middle_area', name: 'المنطقة الوسطى (دير البلح، النصيرات، الزوايدة، البريج)', fee: 5 },
-      { id: 'khanyounis', name: 'خانيونس ورفح', fee: 8 },
-    ];
+    return [];
   });
   const [isAreaModalOpen, setIsAreaModalOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
