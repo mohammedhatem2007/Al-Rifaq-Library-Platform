@@ -21,9 +21,23 @@ create table if not exists public.products (
 create table if not exists public.delivery_zones (
   id text primary key,
   name text not null,
-  fee numeric(10, 2) not null default 0 check (fee >= 0),
+  price numeric(10, 2) not null default 0 check (price >= 0),
   updated_at timestamptz not null default now()
 );
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'delivery_zones' and column_name = 'fee'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'delivery_zones' and column_name = 'price'
+  ) then
+    alter table public.delivery_zones rename column fee to price;
+  end if;
+end
+$$;
 
 do $$
 begin

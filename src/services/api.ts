@@ -22,7 +22,7 @@ type ProductRow = {
   description: string;
   instock: boolean;
 };
-type DeliveryZoneRow = DeliveryArea;
+type DeliveryZoneRow = { id: string; name: string; price: number };
 
 function toProduct(row: ProductRow): Product {
   return {
@@ -161,11 +161,11 @@ export async function fetchDeliveryZones(): Promise<DeliveryArea[]> {
     try {
       const { data: zones, error } = await supabase
         .from('delivery_zones')
-        .select('id,name,fee')
+        .select('id,name,price')
         .order('name', { ascending: true });
       if (error) throw error;
       const cloudZones = (zones || []) as DeliveryZoneRow[];
-      return cloudZones;
+      return cloudZones.map((zone) => ({ ...zone, fee: zone.price }));
     } catch (error) {
       console.warn('Using local delivery zones fallback:', error);
     }
@@ -183,7 +183,7 @@ export async function updateDeliveryZones(zones: DeliveryArea[]): Promise<{ succ
 
       const { error: upsertError } = await supabase
         .from('delivery_zones')
-        .upsert(zones, { onConflict: 'id' });
+        .upsert(zones.map(({ id, name, fee }) => ({ id, name, price: fee })), { onConflict: 'id' });
       if (upsertError) throw upsertError;
 
       const retainedIds = new Set(zones.map((zone) => zone.id));

@@ -73,11 +73,11 @@ export async function readProducts(): Promise<Product[] | null> {
   })) : null;
 }
 
-type DeliveryZoneRow = { id: string; name: string; fee: number };
+type DeliveryZoneRow = { id: string; name: string; price: number };
 
 export async function readDeliveryZones(): Promise<DeliveryArea[] | null> {
-  const rows = await request<DeliveryZoneRow[]>('delivery_zones?select=id,name,fee&order=name.asc');
-  return rows.length > 0 ? rows : null;
+  const rows = await request<DeliveryZoneRow[]>('delivery_zones?select=id,name,price&order=name.asc');
+  return rows.length > 0 ? rows.map((zone) => ({ ...zone, fee: zone.price })) : null;
 }
 
 export async function writeDeliveryZones(zones: DeliveryArea[]): Promise<void> {
@@ -85,7 +85,7 @@ export async function writeDeliveryZones(zones: DeliveryArea[]): Promise<void> {
   await request('delivery_zones?on_conflict=id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(zones.map((zone) => ({ ...zone, updated_at: new Date().toISOString() }))),
+    body: JSON.stringify(zones.map(({ id, name, fee }) => ({ id, name, price: fee, updated_at: new Date().toISOString() }))),
   });
 
   const retained = new Set(zones.map((zone) => zone.id));
