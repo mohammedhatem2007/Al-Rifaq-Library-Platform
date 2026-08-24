@@ -22,6 +22,7 @@ export interface PrintJob {
   layout: SinglePageLayout;
   customLayoutPages?: number;
   binding: BindingOption;
+  bindingQuantity?: number;
   pageCount: number;
   copyCount: number;
   unitPrice: number;

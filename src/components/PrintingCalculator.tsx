@@ -38,6 +38,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
   const [layout, setLayout] = useState<SinglePageLayout>('1_per_page');
   const [customLayoutPages, setCustomLayoutPages] = useState<number>(() => pricing.layoutDivisorCustomDefault || 6);
   const [binding, setBinding] = useState<BindingOption>('none');
+  const [bindingQuantity, setBindingQuantity] = useState<number>(1);
   const [pageCount, setPageCount] = useState<number>(1);
   const [copyCount, setCopyCount] = useState<number>(1);
   const [notes, setNotes] = useState<string>('');
@@ -94,11 +95,12 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
   
   // Single copy print cost
   const singleCopyPaperCost = physicalSheetsCount * getSheetPrice();
-  const singleCopyBindingCost = getBindingFee();
-  const unitPrice = parseFloat((singleCopyPaperCost + singleCopyBindingCost).toFixed(2));
+  const bindingPricePerUnit = getBindingFee();
+  const totalBindingCost = bindingPricePerUnit * (binding === 'none' ? 0 : bindingQuantity);
+  const unitPrice = parseFloat(singleCopyPaperCost.toFixed(2));
   
   // Total price across all copies
-  const grandTotal = parseFloat((unitPrice * copyCount).toFixed(2));
+  const grandTotal = parseFloat((unitPrice * copyCount + totalBindingCost).toFixed(2));
 
   const countPdfPages = async (file: File): Promise<number> => {
     try {
@@ -184,6 +186,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
       layout,
       customLayoutPages: layout === 'custom' ? customLayoutPages : undefined,
       binding,
+      bindingQuantity: binding === 'none' ? 0 : bindingQuantity,
       pageCount,
       copyCount,
       unitPrice,
@@ -302,6 +305,13 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
                 <span className="text-slate-400">التجليد:</span>
                 <span className="font-bold text-white">{getBindingLabel()}</span>
               </div>
+
+              {binding !== 'none' && (
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">عدد التجليد:</span>
+                  <span className="font-bold text-white">{bindingQuantity} × {bindingPricePerUnit.toFixed(2)}₪</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-slate-300">
                 <span className="text-slate-400">الصفحات × النسخ:</span>
@@ -594,6 +604,39 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
                   </button>
                 ))}
               </div>
+
+              {binding !== 'none' && (
+                <div className="flex items-center justify-between gap-3 p-3 bg-[#fcf8ed] border border-[#caa242]/40 rounded-xl">
+                  <span className="text-xs font-bold text-slate-800">عدد النسخ/الملفات المراد تجليدها</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBindingQuantity((prev) => Math.max(1, prev - 1))}
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold active:scale-95"
+                      aria-label="تقليل عدد التجليد"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="500"
+                      value={bindingQuantity}
+                      onChange={(e) => setBindingQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 text-center font-bold text-sm h-8 bg-white border border-slate-200 rounded-lg outline-none"
+                      aria-label="عدد النسخ أو الملفات المراد تجليدها"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setBindingQuantity((prev) => prev + 1)}
+                      className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold active:scale-95"
+                      aria-label="زيادة عدد التجليد"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 6. Page Count and Copy Count */}
