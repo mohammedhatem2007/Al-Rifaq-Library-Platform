@@ -28,6 +28,8 @@ import {
   updateAppConfig, 
   updateAdminPassword,
   fetchProducts,
+  addDeliveryZone,
+  deleteDeliveryZone,
   fetchDeliveryZones,
   updateDeliveryZones,
   addProduct,
@@ -40,7 +42,6 @@ import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccount
 
 const ADMIN_PASSWORD = 'rifaq2026';
 const ADMIN_SESSION_KEY = 'isAdmin';
-const LEGACY_ADMIN_SESSION_KEY = 'rifaq_admin_authenticated';
 const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
 
 interface AdminDashboardProps {
@@ -64,8 +65,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
-      return window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true'
-        || window.localStorage.getItem(LEGACY_ADMIN_SESSION_KEY) === 'true';
+      return localStorage.getItem('isAdmin') === 'true';
     } catch {
       return false;
     }
@@ -168,7 +168,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setAuthToken('admin_token_2026');
       setIsAuthenticated(true);
       window.localStorage.setItem(ADMIN_SESSION_KEY, 'true');
-      window.localStorage.removeItem(LEGACY_ADMIN_SESSION_KEY);
     } else {
       setPasswordInput('');
       setAuthToken('admin_token_2026');
@@ -277,6 +276,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         fee: feeNum,
       };
       updatedAreas = [...areaList, newArea];
+
+      try {
+        const result = await addDeliveryZone(newArea);
+        if (!result.success) {
+          setAreaActionMsg(result.error || 'تعذر حفظ المنطقة');
+          return;
+        }
+        setAreaList(updatedAreas);
+        onConfigUpdated(pricingForm, availability, updatedAreas);
+        setIsAreaModalOpen(false);
+        void updateAppConfig(pricingForm, availability, passwordInput, updatedAreas).catch((error) => {
+          console.error('Delivery zone config sync failed after insert:', error);
+        });
+        return;
+      } catch (error) {
+        console.error('Delivery zone insert failed:', error);
+        setAreaActionMsg(error instanceof Error ? error.message : 'تعذر حفظ المنطقة');
+        return;
+      }
     }
 
     const [configResult, zonesResult] = await Promise.all([
@@ -290,7 +308,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } else {
       const errorMessage = configResult.error || zonesResult.error || 'تعذر حفظ المنطقة';
       console.error('Supabase Error:', errorMessage);
-      alert(errorMessage);
       setAreaActionMsg(errorMessage);
     }
   };
@@ -298,18 +315,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleDeleteArea = async (areaId: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذه المنطقة؟')) return;
     const updatedAreas = areaList.filter((a) => a.id !== areaId);
-    const [configResult, zonesResult] = await Promise.all([
-      updateAppConfig(pricingForm, availability, passwordInput, updatedAreas),
-      updateDeliveryZones(updatedAreas),
-    ]);
-    if (configResult.success && zonesResult.success) {
+    try {
+      await deleteDeliveryZone(areaId);
       setAreaList(updatedAreas);
       onConfigUpdated(pricingForm, availability, updatedAreas);
+      void updateAppConfig(pricingForm, availability, passwordInput, updatedAreas).catch((error) => {
+        console.error('Delivery zone config sync failed after delete:', error);
+      });
       return;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'تعذر حذف المنطقة';
+      console.error('Supabase Error:', errorMessage);
+      setAreaActionMsg(errorMessage);
     }
-    const errorMessage = configResult.error || zonesResult.error || 'تعذر حذف المنطقة';
-    console.error('Supabase Error:', errorMessage);
-    alert(errorMessage);
   };
 
   const handleUpdateAreaFeeQuick = async (areaId: string, newFee: number) => {
@@ -326,7 +344,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
     const errorMessage = configResult.error || zonesResult.error || 'تعذر تحديث رسوم المنطقة';
     console.error('Supabase Error:', errorMessage);
-    alert(errorMessage);
+    setAreaActionMsg(errorMessage);
   };
 
   // Handle Password Change
@@ -607,6 +625,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     if (value === ADMIN_PASSWORD) {
                       setAuthToken('admin_token_2026');
                       setIsAuthenticated(true);
+                      window.localStorage.setItem(ADMIN_SESSION_KEY, 'true');
                     }
                   }}
                   placeholder="أدخل كلمة المرور..."
@@ -667,7 +686,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 onClick={() => {
                   window.localStorage.removeItem(ADMIN_SESSION_KEY);
-                  window.localStorage.removeItem(LEGACY_ADMIN_SESSION_KEY);
                   setIsAuthenticated(false);
                 }}
                 className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
