@@ -1,4 +1,6 @@
 import React, { useState, useId } from 'react';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { 
   UploadCloud, 
   FileText, 
@@ -26,6 +28,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
   onAddPrintJobToCart,
   onDirectCheckout,
 }) => {
+  GlobalWorkerOptions.workerSrc = pdfWorker;
   const fileInputId = useId();
 
   // State
@@ -35,7 +38,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
   const [layout, setLayout] = useState<SinglePageLayout>('1_per_page');
   const [customLayoutPages, setCustomLayoutPages] = useState<number>(() => pricing.layoutDivisorCustomDefault || 6);
   const [binding, setBinding] = useState<BindingOption>('none');
-  const [pageCount, setPageCount] = useState<number>(10);
+  const [pageCount, setPageCount] = useState<number>(1);
   const [copyCount, setCopyCount] = useState<number>(1);
   const [notes, setNotes] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -97,49 +100,49 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
   // Total price across all copies
   const grandTotal = parseFloat((unitPrice * copyCount).toFixed(2));
 
+  const countPdfPages = async (file: File): Promise<number> => {
+    try {
+      const pdf = await getDocument({ data: await file.arrayBuffer() }).promise;
+      return Math.max(1, pdf.numPages);
+    } catch (error) {
+      console.warn('PDF page count failed; using one page:', error);
+      return 1;
+    }
+  };
+
+  const readFileAsDataUrl = (file: File): Promise<string | undefined> => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string | undefined);
+    reader.onerror = () => resolve(undefined);
+    reader.readAsDataURL(file);
+  });
+
   // Handle File Upload
-  const handleFiles = (filesList: FileList | null) => {
+  const handleFiles = async (filesList: FileList | null) => {
     if (!filesList || filesList.length === 0) return;
 
-    const newFiles: UploadedPrintFile[] = [];
-    Array.from(filesList).forEach((file) => {
-      if (file.size > 500 * 1024 * 1024) return;
+    const newFiles = (await Promise.all(Array.from(filesList).map(async (file): Promise<UploadedPrintFile | null> => {
+      if (file.size > 500 * 1024 * 1024) return null;
 
       const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      let estimatedPages = 1;
-      
-      if (file.type.includes('pdf')) {
-        estimatedPages = Math.max(1, Math.round(file.size / 65000));
-      } else if (file.type.includes('image')) {
-        estimatedPages = 1;
-      } else {
-        estimatedPages = Math.max(1, Math.round(file.size / 50000));
-      }
+      const measuredPages = file.type.includes('pdf') ? await countPdfPages(file) : 1;
 
       let previewUrl: string | undefined = undefined;
       if (file.type.includes('image')) {
         previewUrl = URL.createObjectURL(file);
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        setUploadedFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, dataBase64: base64 } : f))
-        );
-      };
-      reader.readAsDataURL(file);
-
-      newFiles.push({
+      return {
         id: fileId,
         name: file.name,
         size: file.size,
         type: file.type || 'application/octet-stream',
         previewUrl,
-        pageCount: Math.min(100, Math.max(1, estimatedPages)),
+        pageCount: measuredPages,
+        dataBase64: await readFileAsDataUrl(file),
         uploadedAt: new Date().toISOString(),
-      });
-    });
+      };
+    }))).filter((file): file is UploadedPrintFile => file !== null);
 
     setUploadedFiles((prev) => {
       const updated = [...prev, ...newFiles];
@@ -156,7 +159,7 @@ export const PrintingCalculator: React.FC<PrintingCalculatorProps> = ({
       if (sumPages > 0) {
         setPageCount(sumPages);
       } else {
-        setPageCount(10);
+        setPageCount(1);
       }
       return remaining;
     });
