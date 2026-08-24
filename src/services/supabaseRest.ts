@@ -89,16 +89,15 @@ export async function getDeliveryZones(): Promise<DeliveryArea[]> {
 }
 
 export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: boolean; zone?: DeliveryArea; error?: string }> {
+  const fallbackZone: DeliveryArea = { id: zone.id || String(Date.now()), name: zone.name, fee: zone.fee };
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('delivery_zones')
-      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id', ignoreDuplicates: false })
-      .select('id,name,price')
-      .single();
+      .upsert({ id: fallbackZone.id, name: fallbackZone.name, price: fallbackZone.fee }, { onConflict: 'id', ignoreDuplicates: false });
     if (error) throw error;
-    return { success: true, zone: data ? toDeliveryArea(data as DeliveryZoneRow) : zone };
+    return { success: true, zone: fallbackZone };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
+    return { success: false, zone: fallbackZone, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
   }
 }
 

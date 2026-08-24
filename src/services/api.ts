@@ -179,16 +179,17 @@ export async function getDeliveryZones(): Promise<DeliveryArea[]> {
 
 export const fetchDeliveryZones = getDeliveryZones;
 
-export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: boolean; error?: string }> {
-  if (!supabase) return { success: false, error: 'Supabase client is not initialized' };
+export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: boolean; zone?: DeliveryArea; error?: string }> {
+  const fallbackZone: DeliveryArea = { id: zone.id || String(Date.now()), name: zone.name, fee: zone.fee };
+  if (!supabase) return { success: false, zone: fallbackZone, error: 'Supabase client is not initialized' };
   try {
     const { error } = await supabase
       .from('delivery_zones')
-      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id', ignoreDuplicates: false });
+      .upsert({ id: fallbackZone.id, name: fallbackZone.name, price: fallbackZone.fee }, { onConflict: 'id', ignoreDuplicates: false });
     if (error) throw error;
-    return { success: true };
+    return { success: true, zone: fallbackZone };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
+    return { success: false, zone: fallbackZone, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
   }
 }
 

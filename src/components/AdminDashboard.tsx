@@ -39,7 +39,8 @@ import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
 
 const ADMIN_PASSWORD = 'rifaq2026';
-const ADMIN_SESSION_KEY = 'rifaq_admin_authenticated';
+const ADMIN_SESSION_KEY = 'isAdmin';
+const LEGACY_ADMIN_SESSION_KEY = 'rifaq_admin_authenticated';
 const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
 
 interface AdminDashboardProps {
@@ -63,7 +64,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     try {
-      return window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+      return window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true'
+        || window.localStorage.getItem(LEGACY_ADMIN_SESSION_KEY) === 'true';
     } catch {
       return false;
     }
@@ -166,6 +168,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setAuthToken('admin_token_2026');
       setIsAuthenticated(true);
       window.localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      window.localStorage.removeItem(LEGACY_ADMIN_SESSION_KEY);
     } else {
       setPasswordInput('');
       setAuthToken('admin_token_2026');
@@ -664,6 +667,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 onClick={() => {
                   window.localStorage.removeItem(ADMIN_SESSION_KEY);
+                  window.localStorage.removeItem(LEGACY_ADMIN_SESSION_KEY);
                   setIsAuthenticated(false);
                 }}
                 className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
