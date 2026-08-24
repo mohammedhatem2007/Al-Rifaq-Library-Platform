@@ -39,6 +39,7 @@ import { downloadOrdersCSV } from '../utils/csvHelper';
 import { getPaymentAccounts, savePaymentAccounts } from '../utils/paymentAccounts';
 
 const ADMIN_PASSWORD = 'rifaq2026';
+const ADMIN_SESSION_KEY = 'rifaq_admin_authenticated';
 const PRODUCT_IMAGE_PLACEHOLDER = 'https://placehold.co/600x800?text=Product';
 
 interface AdminDashboardProps {
@@ -60,7 +61,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onConfigUpdated,
   onProductsUpdated,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string>('admin_token_2026');
@@ -158,6 +165,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (passwordInput === ADMIN_PASSWORD) {
       setAuthToken('admin_token_2026');
       setIsAuthenticated(true);
+      window.localStorage.setItem(ADMIN_SESSION_KEY, 'true');
     } else {
       setPasswordInput('');
       setAuthToken('admin_token_2026');
@@ -631,7 +639,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Top Header */}
           <div className="bg-[#0c1524] text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
             <div className="flex items-center gap-3">
-              <Logo size={46} />
               <div>
                 <h3 className="font-heading font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
                   <span>لوحة تحكم مكتبة الرفاق</span>
@@ -655,7 +662,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
 
               <button
-                onClick={() => setIsAuthenticated(false)}
+                onClick={() => {
+                  window.localStorage.removeItem(ADMIN_SESSION_KEY);
+                  setIsAuthenticated(false);
+                }}
                 className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />

@@ -184,7 +184,7 @@ export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: bo
   try {
     const { error } = await supabase
       .from('delivery_zones')
-      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id' });
+      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id', ignoreDuplicates: false });
     if (error) throw error;
     return { success: true };
   } catch (error) {

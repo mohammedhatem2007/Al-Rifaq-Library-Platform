@@ -88,11 +88,18 @@ export async function getDeliveryZones(): Promise<DeliveryArea[]> {
   return ((rows || []) as DeliveryZoneRow[]).map(toDeliveryArea);
 }
 
-export async function addDeliveryZone(zone: DeliveryArea): Promise<void> {
-  const { error } = await supabase
-    .from('delivery_zones')
-    .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id' });
-  if (error) throw error;
+export async function addDeliveryZone(zone: DeliveryArea): Promise<{ success: boolean; zone?: DeliveryArea; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('delivery_zones')
+      .upsert({ id: zone.id, name: zone.name, price: zone.fee }, { onConflict: 'id', ignoreDuplicates: false })
+      .select('id,name,price')
+      .single();
+    if (error) throw error;
+    return { success: true, zone: data ? toDeliveryArea(data as DeliveryZoneRow) : zone };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'تعذر حفظ منطقة التوصيل' };
+  }
 }
 
 export async function deleteDeliveryZone(zoneId: string): Promise<void> {
